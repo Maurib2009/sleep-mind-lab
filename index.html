@@ -157,6 +157,41 @@ nav button.on{color:var(--accent)}
 nav .dot{width:5px;height:5px;border-radius:50%;background:var(--line-2)}
 nav button.on .dot{background:var(--accent)}
 
+/* ---------- desktop / pantallas anchas ----------
+   Todo lo de arriba fue pensado mobile-first (nav abajo, al alcance del
+   pulgar). En una pantalla grande esa barra fija abajo se ve fuera de
+   lugar y la columna de 520px queda flotando sola en medio de un montón
+   de espacio vacío — acá se reacomoda: nav pasa a una barra fija arriba
+   (más natural con mouse), la columna se ensancha un poco, y dos líneas
+   verticales marcan el "margen de la hoja" para que la página no se
+   sienta vacía sino como una hoja de cuaderno de tamaño real. */
+@media (min-width:820px){
+  body::before,body::after{
+    content:'';position:fixed;top:0;bottom:0;width:1px;
+    background:var(--line);z-index:1;
+  }
+  body::before{left:calc(50% - 340px)}
+  body::after{left:calc(50% + 340px)}
+  #app{
+    max-width:640px;
+    padding:88px 40px 56px;
+  }
+  nav{
+    left:0;right:0;top:0;bottom:auto;
+    justify-content:center;gap:4px;
+    border-top:0;border-bottom:1px solid var(--line-2);
+    padding:16px 10px;
+  }
+  nav button{
+    flex:none;flex-direction:row;gap:8px;
+    padding:9px 18px;border-radius:8px;
+    font-size:12px;
+  }
+  nav button:hover{color:var(--ink)}
+  nav button.on{background:var(--surface-2)}
+  .card.tap:hover{border-color:var(--accent)}
+}
+
 /* ---------- misc ---------- */
 .bar{height:6px;border-radius:99px;background:var(--surface-2);overflow:hidden;border:1px solid var(--line-2)}
 .bar i{display:block;height:100%;background:var(--accent)}
