@@ -3,217 +3,197 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no">
-<meta name="theme-color" content="#0B0E13">
+<meta name="theme-color" content="#080C1A">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>Sleep &amp; Mind Lab</title>
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<!-- Space Grotesk (números/títulos) + Archivo (UI/texto): la identidad
+     que se definió en el Design Canvas. Se cachean solas la primera vez
+     que se abre con internet (el service worker cachea cualquier GET que
+     pase, no solo los 4 archivos originales) así después funcionan
+     offline igual; si por algo no llegaran a cachearse, cae a la pila de
+     fuentes de sistema declarada abajo sin romper nada. -->
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Archivo:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-/* ============================================================
-   Identidad: "instrumento de laboratorio", no "app de SaaS".
-   Tres familias tipográficas con roles fijos (serif para títulos,
-   mono para números/mediciones, sans para el resto) en vez de una
-   sola tipografía para todo. Sin gradientes violeta-cian ni blobs
-   difuminados — el motivo decorativo es una grilla tipo papel
-   milimetrado, coherente con "medir" y "laboratorio". Todo con
-   fuentes de sistema: cero requests de red, así la PWA sigue
-   abriendo y funcionando 100% offline como antes.
-   ============================================================ */
 :root{
-  --bg:#0B0E13;
-  --surface:#12161D;
-  --surface-2:#191F29;
-  --line:#252C38;
-  --line-2:#333B49;
-  --ink:#EDEAE2;
-  --muted:#8A93A6;
-  --accent:#C97C4A;
-  --accent-2:#5FA893;
-  --good:#6FBF8B;
-  --warn:#D9A441;
-  --bad:#D9695A;
-  --r:10px;
-  --font-serif: Georgia,"Iowan Old Style","Palatino Linotype","Book Antiqua",serif;
-  --font-sans: -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
-  --font-mono: ui-monospace,"SF Mono","Cascadia Mono","Courier New",monospace;
+  --bg:#080C1A;
+  --surface:#111834;
+  --surface-2:#182044;
+  --line:#182044;
+  --line-2:#232C56;
+  --ink:#EEF2FF;
+  --muted:#8590BC;
+  --accent:#7C6CF8;
+  --accent-hover:#8F81FF;
+  --accent-press:#6B5BE6;
+  --accent-2:#3FD8E4;
+  --on-accent:#0A0E1F;
+  --good:#4ADE9B;
+  --warn:#FFB454;
+  --bad:#FF6B81;
+  --font-display:"Space Grotesk",system-ui,sans-serif;
+  --font-sans:"Archivo",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;padding:0;background:var(--bg);color:var(--ink)}
 body{
   font-family:var(--font-sans);
-  font-size:16px;line-height:1.5;
+  font-size:14px;line-height:1.5;
   overscroll-behavior:none;
   -webkit-font-smoothing:antialiased;
-  background-image:
-    linear-gradient(var(--line) 1px, transparent 1px),
-    linear-gradient(90deg, var(--line) 1px, transparent 1px);
-  background-size:28px 28px;
-  background-position:-1px -1px;
-  background-attachment:fixed;
 }
 button{font-family:inherit;color:inherit;border:0;background:none;cursor:pointer}
 input,select{font-family:inherit;font-size:16px}
-b,strong{font-weight:700}
+b,strong{font-weight:600}
 
 /* ---------- shell ---------- */
 #app{
   min-height:100dvh;
-  padding:calc(env(safe-area-inset-top) + 18px) 18px calc(env(safe-area-inset-bottom) + 100px);
-  max-width:520px;margin:0 auto;
+  padding:calc(env(safe-area-inset-top) + 10px) 20px calc(env(safe-area-inset-bottom) + 138px);
+  max-width:430px;margin:0 auto;
+  display:flex;flex-direction:column;gap:14px;
 }
 .hidden{display:none !important}
 
 /* ---------- typography ---------- */
-h1{font-family:var(--font-serif);font-size:30px;line-height:1.15;letter-spacing:-.01em;margin:0 0 6px;font-weight:700}
-h2{font-family:var(--font-serif);font-size:19px;letter-spacing:0;margin:0 0 4px;font-weight:700}
-h3{font-size:14px;margin:0 0 8px;font-weight:700}
+h1{font-family:var(--font-display);font-size:26px;line-height:28px;font-weight:700;letter-spacing:-.035em;margin:0}
+h2{font-size:16px;line-height:20px;letter-spacing:-.015em;margin:0;font-weight:600}
+h3{font-size:14px;margin:0 0 8px;font-weight:600}
 .eyebrow{
-  font-family:var(--font-mono);
-  font-size:11px;letter-spacing:.06em;text-transform:uppercase;
-  color:var(--accent);font-weight:600;margin-bottom:8px;
-  display:flex;align-items:center;gap:8px;
+  font-size:10px;line-height:1;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--muted);font-weight:600;margin-bottom:9px;
 }
-.eyebrow::before{content:'';width:14px;height:1px;background:var(--accent);display:inline-block}
 .muted{color:var(--muted);font-size:14px}
-.tiny{font-size:12px;color:var(--muted)}
-.mono{font-family:var(--font-mono)}
+.tiny{font-size:11px;color:var(--muted)}
+.data{font-family:var(--font-display);font-weight:700;letter-spacing:-.04em}
 
 /* ---------- cards ---------- */
 .card{
   background:var(--surface);border:1px solid var(--line-2);
-  border-radius:var(--r);padding:16px;margin-bottom:14px;
-  position:relative;
+  border-radius:18px;padding:18px;
+  display:flex;flex-direction:column;gap:0;
 }
+.card.chart{padding:14px 13px 8px}
+.card.elevated{background:var(--surface-2)}
+.card.active{border-color:var(--accent)}
 .card.tap:active{transform:scale(.985);transition:transform .1s}
 .row{display:flex;align-items:center;justify-content:space-between;gap:12px}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
 
 /* ---------- buttons ---------- */
 .btn{
   display:block;width:100%;text-align:center;
   background:var(--accent);
-  color:#0B0E13;font-weight:700;font-size:16px;
-  padding:16px;border-radius:8px;
-  letter-spacing:-.005em;
+  color:var(--on-accent);font-weight:600;font-size:15px;
+  padding:0;height:54px;line-height:54px;border-radius:14px;
 }
-.btn:active{opacity:.85}
-.btn.ghost{background:transparent;border:1px solid var(--line-2);color:var(--ink)}
-.btn.sm{padding:11px;font-size:13px;border-radius:7px}
+.btn:hover{background:var(--accent-hover)}
+.btn:active{background:var(--accent-press)}
+.btn.compact{height:44px;line-height:44px;border-radius:12px;font-size:14px}
+.btn.ghost{background:var(--surface-2);border:1px solid var(--line-2);color:var(--ink)}
+.btn.ghost:hover{border-color:var(--accent);background:var(--surface-2)}
 
 /* ---------- stats ---------- */
-.stat{background:var(--surface);border:1px solid var(--line-2);border-radius:8px;padding:12px}
-.stat b{display:block;font-family:var(--font-mono);font-size:22px;font-weight:600;letter-spacing:-.01em}
-.stat span{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.stat{flex:1;text-align:center}
+.stat b{display:block;font-family:var(--font-display);font-size:32px;font-weight:700;letter-spacing:-.045em;line-height:1.1}
+.stat b small{font-size:15px;font-weight:500;color:var(--muted)}
+.stat span{font-size:10.5px;color:var(--muted);letter-spacing:.04em;margin-top:5px;display:block}
+.statrow{display:flex;background:var(--surface);border:1px solid var(--line-2);border-radius:18px;padding:16px 4px}
+.statdiv{width:1px;background:var(--line-2);margin:2px 0}
 
 /* ---------- sleep input ---------- */
-.hours{display:flex;align-items:center;justify-content:center;gap:20px;margin:12px 0 6px}
-.hours b{font-family:var(--font-mono);font-size:48px;font-weight:600;letter-spacing:-.02em;min-width:120px;text-align:center}
-.step{width:50px;height:50px;border-radius:50%;background:var(--surface-2);border:1px solid var(--line-2);font-size:24px;font-weight:400;display:flex;align-items:center;justify-content:center;color:var(--accent)}
-.step:active{background:var(--line-2)}
-.quality{display:flex;gap:7px;margin-top:10px}
-.q{flex:1;padding:12px 0;border-radius:7px;background:var(--surface-2);border:1px solid var(--line-2);font-weight:600;text-align:center;font-family:var(--font-mono)}
-.q.on{background:var(--accent);border-color:var(--accent);color:#0B0E13}
+.hours{display:flex;align-items:center;justify-content:space-between;margin:14px 0 0}
+.hours .val{display:flex;align-items:baseline;gap:4px}
+.hours .val b{font-family:var(--font-display);font-size:56px;font-weight:700;letter-spacing:-.05em;line-height:1}
+.hours .val span{font-family:var(--font-display);font-size:20px;font-weight:500;color:var(--muted)}
+.step{width:50px;height:50px;border-radius:16px;background:var(--surface-2);border:1px solid var(--line-2);font-size:22px;line-height:1;display:flex;align-items:center;justify-content:center}
+.step:hover{border-color:var(--accent)}
+.q{flex:1;height:56px;border-radius:14px;background:var(--surface-2);border:1px solid var(--line-2);font-family:var(--font-display);font-weight:700;font-size:20px;text-align:center;color:var(--muted)}
+.q.on{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
 
-/* ---------- tests: la "arena" a pantalla completa ---------- */
-#arena{
-  position:fixed;inset:0;z-index:50;display:flex;flex-direction:column;
-  background:var(--bg);
-}
+/* ---------- tests: pantalla completa ---------- */
+#arena{position:fixed;inset:0;z-index:50;display:flex;flex-direction:column;background:var(--bg)}
 #arena .exit{
-  position:absolute;top:calc(env(safe-area-inset-top) + 14px);right:18px;z-index:2;
-  font-size:12px;color:var(--muted);font-family:var(--font-mono);
-  border:1px solid var(--line-2);padding:6px 10px;border-radius:6px;
+  position:absolute;top:calc(env(safe-area-inset-top) + 14px);right:20px;z-index:2;
+  font-size:11px;color:var(--muted);padding:6px 10px;border-radius:8px;border:1px solid var(--line-2);
 }
 .tapzone{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px}
-.tapzone .big{font-family:var(--font-mono);font-size:56px;font-weight:600;letter-spacing:-.02em}
-.tapzone .label{font-size:16px;color:var(--muted);margin-top:12px;max-width:280px}
-.ring{
-  width:120px;height:120px;border-radius:50%;border:1.5px solid var(--line-2);
-  display:flex;align-items:center;justify-content:center;margin-bottom:8px;
-}
-.seq{display:grid;grid-template-columns:repeat(3,1fr);gap:11px;width:min(280px,78vw);margin-top:24px}
-.key{aspect-ratio:1;border-radius:10px;background:var(--surface-2);border:1px solid var(--line-2);font-size:22px;font-weight:600;font-family:var(--font-mono);display:flex;align-items:center;justify-content:center;color:var(--muted)}
-.key:active,.key.flash{background:var(--accent);border-color:var(--accent);color:#0B0E13}
+.tapzone .big{font-family:var(--font-display);font-size:64px;font-weight:700;letter-spacing:-.05em;line-height:.95}
+.tapzone .label{font-size:14px;font-weight:500;color:var(--muted);margin-top:12px;max-width:280px}
+.seq{display:grid;grid-template-columns:repeat(3,1fr);gap:11px;width:min(280px,78vw);margin-top:26px}
+.key{aspect-ratio:1;border-radius:14px;background:var(--surface-2);border:1px solid var(--line-2);font-family:var(--font-display);font-size:20px;font-weight:700;display:flex;align-items:center;justify-content:center;color:var(--muted)}
+.key:active,.key.flash{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
 
-/* ---------- chart ---------- */
+/* ---------- gráficos ---------- */
 svg{display:block;width:100%;overflow:visible}
 .axis{stroke:var(--line-2);stroke-width:1}
-.gl{fill:var(--muted);font-size:9px;font-family:var(--font-mono)}
 .gridline{stroke:var(--line);stroke-width:1}
+.gl{fill:var(--muted);font-size:9.5px;font-family:var(--font-sans)}
 
 /* ---------- nav ---------- */
 nav{
   position:fixed;left:0;right:0;bottom:0;z-index:40;
-  display:flex;justify-content:space-around;
-  background:rgba(11,14,19,.94);backdrop-filter:blur(14px);
+  height:84px;
+  display:flex;align-items:flex-start;padding:0 6px calc(env(safe-area-inset-bottom));
+  background:rgba(8,12,26,.78);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);
   border-top:1px solid var(--line-2);
-  padding:10px 6px calc(env(safe-area-inset-bottom) + 10px);
 }
-nav button{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;font-size:10px;color:var(--muted);font-weight:600;font-family:var(--font-mono);letter-spacing:.02em}
-nav button.on{color:var(--accent)}
-nav .dot{width:5px;height:5px;border-radius:50%;background:var(--line-2)}
-nav button.on .dot{background:var(--accent)}
+nav button{flex:1;display:flex;flex-direction:column;align-items:center;gap:7px;color:var(--muted)}
+nav button svg{margin-top:9px}
+nav button .bar{width:26px;height:2px;border-radius:2px;background:transparent}
+nav button.on{color:var(--ink)}
+nav button.on .bar{background:var(--accent)}
+nav button span{font-size:10px;font-weight:600;letter-spacing:.02em}
 
-/* ---------- desktop / pantallas anchas ----------
-   Todo lo de arriba fue pensado mobile-first (nav abajo, al alcance del
-   pulgar). En una pantalla grande esa barra fija abajo se ve fuera de
-   lugar y la columna de 520px queda flotando sola en medio de un montón
-   de espacio vacío — acá se reacomoda: nav pasa a una barra fija arriba
-   (más natural con mouse), la columna se ensancha un poco, y dos líneas
-   verticales marcan el "margen de la hoja" para que la página no se
-   sienta vacía sino como una hoja de cuaderno de tamaño real. */
+/* ---------- desktop / pantallas anchas ---------- */
 @media (min-width:820px){
   body::before,body::after{
     content:'';position:fixed;top:0;bottom:0;width:1px;
-    background:var(--line);z-index:1;
+    background:var(--line-2);z-index:1;opacity:.6;
   }
-  body::before{left:calc(50% - 340px)}
-  body::after{left:calc(50% + 340px)}
-  #app{
-    max-width:640px;
-    padding:88px 40px 56px;
-  }
+  body::before{left:calc(50% - 300px)}
+  body::after{left:calc(50% + 300px)}
+  #app{max-width:600px;padding:96px 40px 64px}
   nav{
-    left:0;right:0;top:0;bottom:auto;
-    justify-content:center;gap:4px;
+    left:0;right:0;top:0;bottom:auto;height:auto;
+    justify-content:center;gap:4px;align-items:center;
     border-top:0;border-bottom:1px solid var(--line-2);
-    padding:16px 10px;
+    padding:14px 10px;
   }
-  nav button{
-    flex:none;flex-direction:row;gap:8px;
-    padding:9px 18px;border-radius:8px;
-    font-size:12px;
-  }
+  nav button{flex:none;flex-direction:row;gap:9px;padding:8px 16px;border-radius:10px}
+  nav button svg{margin-top:0}
+  nav button .bar{display:none}
   nav button:hover{color:var(--ink)}
   nav button.on{background:var(--surface-2)}
   .card.tap:hover{border-color:var(--accent)}
 }
 
 /* ---------- misc ---------- */
-.bar{height:6px;border-radius:99px;background:var(--surface-2);overflow:hidden;border:1px solid var(--line-2)}
-.bar i{display:block;height:100%;background:var(--accent)}
-.pill{display:inline-block;font-family:var(--font-mono);font-size:11px;font-weight:600;padding:4px 9px;border-radius:99px;background:var(--surface-2);border:1px solid var(--line-2);color:var(--muted)}
-.pill.good{color:var(--good);border-color:rgba(111,191,139,.35)}
-.pill.warn{color:var(--warn);border-color:rgba(217,164,65,.35)}
-.pill.bad{color:var(--bad);border-color:rgba(217,105,90,.35)}
+.bar-track{height:8px;border-radius:4px;background:var(--line-2);overflow:hidden}
+.bar-track i{display:block;height:100%;background:var(--accent-2);border-radius:4px}
+.pill{display:inline-block;font-size:10px;font-weight:600;padding:5px 9px;border-radius:8px;background:rgba(133,144,188,.1);border:1px solid var(--line-2);color:var(--muted);letter-spacing:.08em;text-transform:uppercase}
+.pill.good{color:var(--good);background:rgba(74,222,155,.12);border-color:rgba(74,222,155,.35)}
+.pill.warn{color:var(--warn);background:rgba(255,180,84,.12);border-color:rgba(255,180,84,.35)}
+.pill.bad{color:var(--bad);background:rgba(255,107,129,.12);border-color:rgba(255,107,129,.35)}
+.rchip{display:inline-block;font-family:var(--font-display);font-size:12px;font-weight:700;padding:4px 8px;border-radius:7px;background:rgba(133,144,188,.1);border:1px solid var(--line-2);color:var(--muted)}
+.rchip.strong-good{color:var(--accent-2);background:rgba(63,216,228,.12);border-color:rgba(63,216,228,.4)}
+.rchip.strong-warn{color:var(--accent);background:rgba(124,108,248,.12);border-color:rgba(124,108,248,.4)}
 ul.list{list-style:none;padding:0;margin:0}
-ul.list li{padding:11px 0;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;font-size:14px;gap:10px}
+ul.list li{padding:13px 2px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;font-size:14px;gap:10px}
 ul.list li:last-child{border-bottom:0}
-ul.list li span:last-child{font-family:var(--font-mono);font-size:12px;color:var(--muted);text-align:right}
+ul.list li span:last-child{font-size:11px;color:var(--muted);text-align:right}
 .fade{animation:fade .28s ease both}
 @keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 @keyframes flashfeedback{0%{opacity:1}100%{opacity:0}}
 .feedback{animation:flashfeedback .5s ease forwards}
 @media (prefers-reduced-motion:reduce){.fade,.feedback{animation:none}}
-.mark{
-  width:44px;height:44px;border-radius:9px;
-  background:var(--surface-2);border:1px solid var(--line-2);
-  display:flex;align-items:center;justify-content:center;
-  margin-bottom:16px;color:var(--accent);
-}
+.mark{width:52px;height:52px;border-radius:14px;background:var(--surface);border:1px solid var(--line-2);display:flex;align-items:center;justify-content:center}
+.divider{height:1px;background:var(--line-2);margin:0 -18px}
 </style>
 </head>
 <body>
@@ -269,41 +249,55 @@ const app = document.getElementById('app');
 const navEl = document.getElementById('nav');
 let view = DB.get('sml_seen',false) ? 'home' : 'welcome';
 
-const TABS = [['home','Inicio'],['sleep','Sueño'],['tests','Tests'],['data','Datos'],['ai','Análisis']];
+const TABS = [
+  ['home','Inicio',  `<rect x="2.5" y="2.5" width="13" height="13" rx="3" stroke="currentColor" stroke-width="1.6" fill="none"/>`],
+  ['sleep','Sueño',  `<circle cx="9" cy="9" r="6.5" stroke="currentColor" stroke-width="1.6" fill="none"/>`],
+  ['tests','Tests',  `<polygon points="9,2.5 15.5,14.5 2.5,14.5" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" fill="none"/>`],
+  ['data','Datos',   `<rect x="2.4" y="9" width="3.2" height="6.4" fill="currentColor"/><rect x="7.4" y="5.4" width="3.2" height="10" fill="currentColor"/><rect x="12.4" y="2.4" width="3.2" height="13" fill="currentColor"/>`],
+  ['ai','Análisis',  `<rect x="4" y="4" width="10" height="10" transform="rotate(45 9 9)" stroke="currentColor" stroke-width="1.6" fill="none"/>`],
+];
 
 function go(v){ view=v; render(); window.scrollTo(0,0); }
 
 function render(){
   navEl.classList.toggle('hidden', view==='welcome');
-  navEl.innerHTML = TABS.map(([id,label])=>
-    `<button class="${view===id?'on':''}" onclick="go('${id}')"><span class="dot"></span>${label}</button>`).join('');
+  navEl.innerHTML = TABS.map(([id,label,icon])=>
+    `<button class="${view===id?'on':''}" onclick="go('${id}')">
+      <span class="bar"></span>
+      <svg width="17" height="17" viewBox="0 0 18 18" fill="none">${icon}</svg>
+      <span>${label}</span>
+    </button>`).join('');
   app.className='fade';
   app.innerHTML = ({welcome:vWelcome,home:vHome,sleep:vSleep,tests:vTests,data:vData,ai:vAI})[view]();
   void app.offsetWidth;
 }
 window.go = go;
 
-/* ============ ícono simple, sin librerías: SVG inline por pantalla ============ */
-const ICONS = {
-  home:  `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/></svg>`,
-  clock: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>`,
-  moon:  `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5z"/></svg>`,
-};
+/* Ícono de la app, embebido para reusarlo en la bienvenida: la curva de
+   sueño (cian) con un punto de medición (violeta) — mismo mark que
+   icon-192/512.png, así la marca es consistente adentro y afuera. */
+const LOGO_SVG = `<svg width="30" height="30" viewBox="0 0 48 48"><polyline points="8,31 16,22.5 24,27.5 40,12" fill="none" stroke="#3FD8E4" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><circle cx="31.5" cy="19.5" r="5.2" fill="#7C6CF8"/></svg>`;
 
 /* ============ pantallas ============ */
 function vWelcome(){
   return `
-  <div style="min-height:80dvh;display:flex;flex-direction:column;justify-content:center">
-    <div class="mark">${ICONS.moon}</div>
-    <div class="eyebrow">Proyecto CAS · IB</div>
-    <h1>Sleep &amp; Mind Lab</h1>
-    <p class="muted" style="font-size:17px;margin:6px 0 26px">Un instrumento propio para ver, con tus propios datos, cuánto te cuesta cada hora de sueño perdida.</p>
-    <div class="card">
-      <h3>Cómo funciona</h3>
-      <p class="muted" style="margin:0">Anotás cuánto dormiste, hacés tres pruebas cortas — reacción, memoria y atención — y el laboratorio cruza tus registros para mostrarte la relación real entre tu descanso y tu cabeza.</p>
+  <div style="min-height:82dvh;display:flex;flex-direction:column;justify-content:center;gap:0">
+    <div class="mark">${LOGO_SVG}</div>
+    <div class="eyebrow" style="margin-top:20px">Sleep &amp; Mind Lab</div>
+    <h1 style="font-size:34px;line-height:36px">Conocé cómo dormís, pensás y rendís</h1>
+    <p class="muted" style="font-size:14px;line-height:21px;margin:14px 0 0;max-width:300px">Un instrumento de medición para estudiantes. Sin consejos vagos: solo tus datos.</p>
+    <div class="card" style="margin-top:20px">
+      <div class="eyebrow" style="color:var(--accent-2);margin-bottom:10px">El método</div>
+      <p style="margin:0;font-size:13px;line-height:19px">Registrás tus horas de sueño y hacés tres tests cognitivos cortos cada día.</p>
+      <p class="muted" style="margin:8px 0 0;font-size:13px;line-height:19px">A los 7 días el laboratorio calcula la correlación entre tu descanso y tu rendimiento.</p>
     </div>
-    <button class="btn" onclick="DB.set('sml_seen',true);go('sleep')">Empezar</button>
-    <p class="tiny" style="text-align:center;margin-top:14px">Todo se guarda solo en este teléfono. Nadie más lo ve.</p>
+    <div style="display:flex;gap:14px;margin-top:18px">
+      <div style="flex:1;border-top:1px solid var(--line-2);padding-top:10px"><div class="data" style="font-size:20px">7</div><div class="tiny" style="margin-top:2px">días</div></div>
+      <div style="flex:1;border-top:1px solid var(--line-2);padding-top:10px"><div class="data" style="font-size:20px">3</div><div class="tiny" style="margin-top:2px">tests diarios</div></div>
+      <div style="flex:1;border-top:1px solid var(--line-2);padding-top:10px"><div class="data" style="font-size:20px">21</div><div class="tiny" style="margin-top:2px">mediciones</div></div>
+    </div>
+    <button class="btn" style="margin-top:26px" onclick="DB.set('sml_seen',true);go('sleep')">Comenzar análisis</button>
+    <p class="tiny" style="text-align:center;margin:14px 0 0">Datos guardados solo en tu dispositivo. Nadie más los ve.</p>
   </div>`;
 }
 
@@ -314,23 +308,29 @@ function vHome(){
   const ds = withData();
   const last7 = ds.slice(-7).map(k=>S.days[k].sleep);
   return `
-  <div class="eyebrow">${new Date().toLocaleDateString('es',{weekday:'long',day:'numeric',month:'long'})}</div>
-  <h1>Hoy</h1>
-  <p class="muted" style="margin:0 0 18px">${d.sleep==null?'Todavía no registraste tu sueño de anoche.':`Dormiste ${d.sleep} h · calidad ${d.quality??'—'}/5`}</p>
+  <div class="row" style="align-items:flex-end">
+    <div>
+      <div class="eyebrow">${new Date().toLocaleDateString('es',{weekday:'long',day:'numeric',month:'long'}).toUpperCase()}</div>
+      <h1>Resumen de hoy</h1>
+    </div>
+  </div>
+  <p class="muted" style="margin:-6px 0 0">${d.sleep==null?'Todavía no registraste tu sueño de anoche.':`Dormiste ${d.sleep} h · calidad ${d.quality??'—'}/5`}</p>
 
-  <div class="grid3" style="margin-bottom:14px">
-    <div class="stat"><b>${d.sleep??'—'}</b><span>Horas</span></div>
-    <div class="stat"><b>${cs??'—'}</b><span>Cognitivo</span></div>
-    <div class="stat"><b>${done}/3</b><span>Tests</span></div>
+  <div class="statrow">
+    <div class="stat"><b>${d.sleep??'—'}<small>${d.sleep!=null?'h':''}</small></b><span>SUEÑO</span></div>
+    <div class="statdiv"></div>
+    <div class="stat"><b style="color:var(--accent-2)">${cs??'—'}</b><span>Í. COGNITIVO</span></div>
+    <div class="statdiv"></div>
+    <div class="stat"><b style="color:var(--warn)">${done}<small>/3</small></b><span>TESTS</span></div>
   </div>
 
   ${d.sleep==null?`<button class="btn" onclick="go('sleep')">Registrar sueño</button>`
     : done<3?`<button class="btn" onclick="go('tests')">Continuar tests (${3-done} restantes)</button>`
     : `<button class="btn" onclick="go('ai')">Ver tu análisis de hoy</button>`}
 
-  <div class="card" style="margin-top:16px">
-    <div class="row"><h3 style="margin:0">Últimos 7 días</h3><span class="tiny mono">${ds.length} reg.</span></div>
-    ${last7.length? sparkline(last7) : `<p class="muted" style="margin:10px 0 0">Registrá al menos un día para ver tu curva de sueño.</p>`}
+  <div class="card chart">
+    <div class="row" style="padding:0 5px"><h3 style="margin:0">Sueño · últimos 7 días</h3><span class="tiny">${ds.length} reg.</span></div>
+    ${last7.length? sparkline(last7) : `<p class="muted" style="margin:10px 5px 4px;font-size:13px">Registrá al menos un día para ver tu curva.</p>`}
   </div>
 
   ${challengeCard()}`;
@@ -338,11 +338,11 @@ function vHome(){
 
 function challengeCard(){
   if(!S.challengeStart){
-    return `<div class="card">
-      <div class="eyebrow">Challenge</div>
-      <h3>7 días de sueño cuidado</h3>
-      <p class="muted" style="margin:0 0 12px">El laboratorio guarda tu rendimiento actual como línea de base, y a los 7 días te muestra cuánto cambió.</p>
-      <button class="btn sm" onclick="startChallenge()">Empezar challenge</button>
+    return `<div class="card elevated">
+      <div class="eyebrow" style="color:var(--accent)">Challenge de 7 días</div>
+      <h3>Sueño cuidado</h3>
+      <p class="muted" style="margin:0 0 14px;font-size:13px;line-height:19px">El laboratorio guarda tu rendimiento actual como línea de base, y a los 7 días te muestra cuánto cambió.</p>
+      <button class="btn compact" onclick="startChallenge()">Empezar challenge</button>
     </div>`;
   }
   const start = S.challengeStart;
@@ -352,12 +352,19 @@ function challengeCard(){
   dates().forEach(k=>{ const c=cogScore(S.days[k]); if(c==null) return; (inRange(k)?after:before).push(c); });
   const b=avg(before), a=avg(after);
   const diff = (b!=null&&a!=null)? Math.round(a-b) : null;
-  return `<div class="card">
-    <div class="row"><div class="eyebrow" style="margin:0">Challenge · día ${clamp(elapsed+1,1,7)}/7</div>
-    <span class="pill ${diff==null?'':diff>0?'good':diff<0?'bad':'warn'}">${diff==null?'sin comparar':(diff>0?'+':'')+diff+' pts'}</span></div>
-    <div class="bar" style="margin:12px 0"><i style="width:${clamp((elapsed+1)/7*100,6,100)}%"></i></div>
-    <div class="row tiny mono"><span>Antes: ${b?Math.round(b):'—'}</span><span>Ahora: ${a?Math.round(a):'—'}</span></div>
-    ${elapsed>=7?`<button class="btn sm ghost" style="margin-top:12px" onclick="S.challengeStart=null;save();render()">Cerrar challenge</button>`:''}
+  return `<div class="card elevated">
+    <div class="row"><div class="eyebrow" style="color:var(--accent);margin:0">Challenge de 7 días</div>
+    <span class="tiny">día <strong style="color:var(--ink)">${clamp(elapsed+1,1,7)}</strong> / 7</span></div>
+    <div class="bar-track" style="margin:12px 0"><i style="width:${clamp((elapsed+1)/7*100,6,100)}%"></i></div>
+    <div class="row" style="align-items:flex-end">
+      <div style="display:flex;gap:14px">
+        <div><div class="tiny">ANTES</div><div class="data" style="font-size:24px;color:var(--muted);margin-top:3px">${b?Math.round(b):'—'}</div></div>
+        <div style="padding-bottom:6px;color:var(--good)">→</div>
+        <div><div class="tiny">AHORA</div><div class="data" style="font-size:24px;margin-top:3px">${a?Math.round(a):'—'}</div></div>
+      </div>
+      <span class="pill ${diff==null?'':diff>0?'good':diff<0?'bad':'warn'}">${diff==null?'sin comparar':(diff>0?'+':'')+diff+' pts'}</span>
+    </div>
+    ${elapsed>=7?`<button class="btn ghost compact" style="margin-top:14px" onclick="S.challengeStart=null;save();render()">Cerrar challenge</button>`:''}
   </div>`;
 }
 window.startChallenge=()=>{S.challengeStart=today();save();render()};
@@ -372,29 +379,29 @@ function vSleep(){
   return `
   <div class="eyebrow">Registro de sueño</div>
   <h1>¿Cuánto dormiste?</h1>
-  <div class="card" style="margin-top:16px">
+  <div class="card">
+    <div class="tiny" style="text-align:center;letter-spacing:.1em">HORAS DORMIDAS</div>
     <div class="hours">
       <button class="step" onclick="setH(-0.5)">–</button>
-      <b>${draftH.toFixed(1)}<span style="font-size:18px;color:var(--muted)"> h</span></b>
+      <div class="val"><b>${draftH.toFixed(1)}</b><span>h</span></div>
       <button class="step" onclick="setH(0.5)">+</button>
     </div>
-    <p class="tiny" style="text-align:center;margin:0">${sleepNote(draftH)}</p>
+    <p class="tiny" style="text-align:center;margin:14px 0 0">${sleepNote(draftH)}</p>
   </div>
   <div class="card">
-    <h3>Calidad del descanso</h3>
-    <div class="quality">${[1,2,3,4,5].map(n=>`<button class="q ${draftQ===n?'on':''}" onclick="draftQ=${n};render()">${n}</button>`).join('')}</div>
-    <div class="row tiny" style="margin-top:8px"><span>Muy mala</span><span>Excelente</span></div>
+    <div class="tiny" style="letter-spacing:.1em;margin-bottom:12px">CALIDAD PERCIBIDA</div>
+    <div style="display:flex;gap:8px">${[1,2,3,4,5].map(n=>`<button class="q ${draftQ===n?'on':''}" onclick="draftQ=${n};render()">${n}</button>`).join('')}</div>
+    <div class="row tiny" style="margin-top:10px"><span>Muy mala</span><span>Excelente</span></div>
   </div>
   <button class="btn" onclick="saveSleep()">Guardar ${d.sleep!=null?'cambios':'registro'}</button>
 
-  <div class="card" style="margin-top:20px">
-    <h3>Historial</h3>
-    ${hist.length? `<ul class="list">${hist.map(k=>{
-      const x=S.days[k]; const c=cogScore(x);
-      return `<li><span>${dayLabel(k)}${k===today()?' · hoy':''}</span>
-      <span>${x.sleep!=null?x.sleep+' h':'—'} · cog ${c??'—'}</span></li>`;}).join('')}</ul>`
-      : `<p class="muted" style="margin:0">Sin registros todavía.</p>`}
-  </div>`;
+  <div class="row" style="margin-top:4px"><h3 style="margin:0">Historial</h3><span class="tiny">últimos días</span></div>
+  ${hist.length? `<ul class="list">${hist.map(k=>{
+    const x=S.days[k]; const c=cogScore(x);
+    return `<li><span style="width:34px;font-weight:600;color:var(--muted);font-size:11px;letter-spacing:.06em">${dayLabel(k).toUpperCase()}${k===today()?' · HOY':''}</span>
+    <span style="flex:1;text-align:right;color:var(--ink);font-family:var(--font-display);font-weight:700">${x.sleep!=null?x.sleep+'h':'—'}</span>
+    <span>cog ${c??'—'}</span></li>`;}).join('')}</ul>`
+    : `<p class="muted" style="margin:0;font-size:13px">Sin registros todavía.</p>`}`;
 }
 function sleepNote(h){
   if(h<5) return 'Privación severa: el impacto cognitivo suele ser fuerte.';
@@ -408,29 +415,34 @@ window.saveSleep = () => { const d=day(); d.sleep=draftH; d.quality=draftQ; save
 /* ---- tests ---- */
 function vTests(){
   const d = day();
+  const done = ['reaction','memory','attention'].filter(k=>d[k]!=null).length;
   const t = [
-    ['reaction','Tiempo de reacción','Tocá apenas la pantalla cambie de color. 5 intentos.', d.reaction!=null? d.reaction+' ms':null],
-    ['memory','Memoria a corto plazo','Repetí la secuencia. Se alarga hasta que fallás.', d.memory!=null? 'nivel '+d.memory:null],
-    ['attention','Atención sostenida','Tocá solo las letras, ignorá los números. 45 s.', d.attention!=null? d.attention+'%':null],
+    ['reaction','Tiempo de reacción','Tocá apenas la pantalla cambie de color. 5 intentos.', d.reaction, v=>v+' ms', 'currentColor'],
+    ['memory','Memoria a corto plazo','Repetí la secuencia. Se alarga hasta que fallás.', d.memory, v=>'nivel '+v, 'currentColor'],
+    ['attention','Atención sostenida','Tocá solo las letras, ignorá los números. 45 s.', d.attention, v=>v+'%', 'currentColor'],
   ];
   return `
-  <div class="eyebrow">Tests de hoy</div>
-  <h1>Medí tu mente</h1>
-  <p class="muted" style="margin:0 0 18px">Hacelos siempre a una hora parecida para que la comparación sirva.</p>
-  ${t.map(([id,name,desc,res])=>`
-    <div class="card tap" onclick="start('${id}')">
-      <div class="row"><h2 style="margin:0">${name}</h2>
-      <span class="pill ${res?'good':''}">${res||'pendiente'}</span></div>
-      <p class="muted" style="margin:6px 0 0">${desc}</p>
+  <div class="eyebrow">Batería diaria</div>
+  <h1>Tests cognitivos</h1>
+  <div class="card" style="flex-direction:row;align-items:center;gap:10px">
+    <div style="flex:1"><div style="font-size:13px;font-weight:600">Progreso de hoy</div><div class="tiny" style="margin-top:3px">Hacelos siempre a una hora parecida.</div></div>
+    <div class="data" style="font-size:22px">${done}<span style="font-size:14px;color:var(--muted)">/3</span></div>
+  </div>
+  ${t.map(([id,name,desc,val])=>`
+    <div class="card tap ${val==null?'active':''}" onclick="start('${id}')">
+      <div class="row" style="align-items:flex-start">
+        <div><h2>${name}</h2><p class="muted" style="margin:5px 0 0;font-size:12.5px;line-height:18px;max-width:220px">${desc}</p></div>
+        <span class="pill ${val?'good':'warn'}">${val?'Resultado':'Pendiente'}</span>
+      </div>
+      ${val!=null?`<div class="divider" style="margin-top:14px"></div><div style="margin-top:14px"><span class="data" style="font-size:22px">${id==='reaction'?val+' ms':id==='memory'?'nivel '+val:val+'%'}</span></div>`
+        :`<button class="btn compact" style="margin-top:14px">Empezar test</button>`}
     </div>`).join('')}
   ${d.reaction!=null&&d.memory!=null&&d.attention!=null?`<button class="btn" onclick="go('ai')">Ver análisis</button>`:''}`;
 }
 
-/* La "arena" siempre tiene: botón Salir (fuera de la zona de toque, para
-   que nunca se confunda con un toque válido del test) + una .tapzone
-   dedicada donde SÍ pasa la lógica del test. Antes el toque se escuchaba
-   en el contenedor entero, así que tocar "Salir" también contaba como un
-   toque de reacción — bug real, arreglado acá con dos zonas separadas. */
+/* La "arena" siempre separa el botón Salir (fuera de la zona de toque)
+   de la .tapzone que escucha los toques del test — antes compartían
+   contenedor y "Salir" también contaba como un toque de reacción. */
 const arena = document.getElementById('arena');
 function openArena(bodyHtml){
   arena.classList.remove('hidden');
@@ -450,17 +462,17 @@ let T2;
 
 window.start = id => ({reaction:runReaction,memory:runMemory,attention:runAttention})[id]();
 
-/* reacción — ahora un toque anticipado no se ignora en silencio: se avisa
-   y el intento se repite, en vez de dejar pasar una medición inválida. */
+/* reacción — un toque anticipado avisa y repite el intento, en vez de
+   ignorarse en silencio (restaba validez a la medición). */
 function runReaction(){
   const times=[]; let n=0, t0=0, ready=false;
   const step=()=>{
     if(n>=5){ const best=Math.round(avg(times)); day().reaction=best; save();
-      const z=openArena(`<div class="big">${best} ms</div><div class="label">Promedio de 5 intentos. Un adulto descansado ronda los 250 ms.</div>
+      openArena(`<div class="big">${best} <span style="font-size:22px;color:var(--muted)">ms</span></div><div class="label">Promedio de 5 intentos. Un adulto descansado ronda los 250 ms.</div>
       <button class="btn" style="max-width:260px;margin-top:26px" onclick="closeArena()">Listo</button>`);
       return; }
     ready=false;
-    const z = openArena(`<div class="ring"><div class="label" style="margin:0">${n+1}/5</div></div><div class="label">Esperá al color…</div>`);
+    const z = openArena(`<div class="label">${n+1}/5 · esperá al color</div>`);
     z.style.background='var(--bg)';
     z.onclick=()=>{
       if(!ready){
@@ -470,7 +482,7 @@ function runReaction(){
     };
     schedule(()=>{
       z.style.background='var(--accent)';
-      z.innerHTML=`<div class="big" style="color:#0B0E13">¡Ahora!</div>`;
+      z.innerHTML=`<div class="big" style="color:var(--on-accent)">¡Ahora!</div>`;
       ready=true; t0=performance.now();
       z.onclick=()=>{ if(!ready)return; ready=false; times.push(performance.now()-t0); n++; z.style.background='var(--bg)'; z.onclick=null; schedule(step,420); };
     }, 1200+Math.random()*2600);
@@ -520,7 +532,7 @@ function runAttention(){
     const el=document.getElementById('stim'); if(el){ el.textContent=c; el.style.color= 'var(--ink)'; }
     const tl=document.getElementById('tl'); if(tl) tl.textContent=left+' s';
   };
-  const z = openArena(`<div class="label mono" id="tl">45 s</div><div class="big" id="stim" style="font-size:88px">·</div>
+  const z = openArena(`<div class="label" id="tl">45 s</div><div class="big" id="stim" style="font-size:88px">·</div>
     <div class="label">Tocá solo si es una <b>letra</b></div>`);
   z.onclick=()=>{
     if(!current||answered)return; answered=true;
@@ -543,46 +555,46 @@ function runAttention(){
 /* ---- datos ---- */
 function vData(){
   const ds = withData();
-  if(ds.length<2) return `<div class="eyebrow">Dashboard</div><h1>Tus datos</h1>
-    <div class="card"><p class="muted" style="margin:0">Necesitás al menos 2 días registrados para ver comparaciones. Llevás ${ds.length}.</p></div>
+  if(ds.length<2) return `<div class="eyebrow">Dashboard</div><h1>Datos</h1>
+    <div class="card"><p class="muted" style="margin:0;font-size:13px">Necesitás al menos 2 días registrados para ver comparaciones. Llevás ${ds.length}.</p></div>
     <button class="btn ghost" onclick="go('sleep')">Registrar un día</button>`;
 
   const rows = [
-    ['reaction','Sueño vs reacción','ms', true],
-    ['memory','Sueño vs memoria','nivel', false],
-    ['attention','Sueño vs atención','%', false],
+    ['reaction','Sueño vs. reacción','ms', true, 'Menos sueño → respuestas más lentas.'],
+    ['memory','Sueño vs. memoria','nivel', false, 'Más horas suelen sumar puntos.'],
+    ['attention','Sueño vs. atención','%', false, 'También influye la hora del test.'],
   ];
   const sleeps = ds.map(k=>S.days[k].sleep);
   const cogs = ds.map(k=>cogScore(S.days[k])).filter(v=>v!=null);
   return `
-  <div class="eyebrow">Dashboard</div>
-  <h1>Tus datos</h1>
-  <div class="grid2" style="margin:16px 0 14px">
-    <div class="stat"><b>${avg(sleeps).toFixed(1)} h</b><span>Sueño promedio</span></div>
-    <div class="stat"><b>${cogs.length?Math.round(avg(cogs)):'—'}</b><span>Cognitivo promedio</span></div>
+  <div class="eyebrow">${plural(ds.length,'noche','noches').toUpperCase()} registradas</div>
+  <h1>Datos</h1>
+  <div class="grid2">
+    <div class="card"><div class="tiny" style="letter-spacing:.06em">SUEÑO MEDIO</div><div class="data" style="font-size:28px;margin-top:6px">${avg(sleeps).toFixed(1)}<span style="font-size:14px;color:var(--muted)">h</span></div></div>
+    <div class="card"><div class="tiny" style="letter-spacing:.06em">Í. COGNITIVO MEDIO</div><div class="data" style="font-size:28px;margin-top:6px;color:var(--accent-2)">${cogs.length?Math.round(avg(cogs)):'—'}</div></div>
   </div>
 
-  <div class="card">
-    <h3>Evolución del sueño</h3>
+  <div class="card chart">
+    <div class="row" style="padding:0 5px"><h3 style="margin:0">Evolución del sueño</h3></div>
     ${sparkline(ds.slice(-14).map(k=>S.days[k].sleep), ds.slice(-14).map(dayLabel))}
   </div>
 
-  ${rows.map(([f,title,unit,inv])=>{
+  ${rows.map(([f,title,unit,inv,note])=>{
     const [xs,ys]=pairs(f);
-    if(xs.length<2) return `<div class="card"><h3>${title}</h3><p class="muted" style="margin:0">Faltan datos (${xs.length}/2 días con este test).</p></div>`;
+    if(xs.length<2) return `<div class="card"><h3>${title}</h3><p class="muted" style="margin:0;font-size:13px">Faltan datos (${xs.length}/2 días con este test).</p></div>`;
     const r = pearson(xs,ys);
-    const strength = r==null?'—':Math.abs(r)>.6?'fuerte':Math.abs(r)>.3?'moderada':'débil';
-    const dir = r==null?'':(inv? (r<0?'good':'warn') : (r>0?'good':'warn'));
-    return `<div class="card">
-      <div class="row"><h3 style="margin:0">${title}</h3>
-      <span class="pill ${dir}">${r==null?'—':'r = '+r.toFixed(2)}</span></div>
-      ${scatter(xs,ys,unit)}
-      <p class="tiny" style="margin:8px 0 0">Relación ${strength}${r!=null?(r<0?' e inversa':' y directa'):''} entre horas de sueño y ${title.split('vs ')[1]}. Con ${xs.length} días, tomalo como tendencia, no como prueba.</p>
+    const strong = r!=null && Math.abs(r)>=.6;
+    const good = r!=null && (inv? r<0 : r>0);
+    return `<div class="card chart">
+      <div class="row" style="padding:0 5px"><h3 style="margin:0">${title}</h3>
+      <span class="rchip ${strong?(good?'strong-good':'strong-warn'):''}">${r==null?'—':'r = '+(r<0?'−':'')+Math.abs(r).toFixed(2)}</span></div>
+      ${scatter(xs,ys,unit,good)}
+      <p class="tiny" style="margin:6px 5px 8px">${note} Con ${xs.length} días, tomalo como tendencia, no como prueba.</p>
     </div>`;
   }).join('')}
 
   <div class="card">
-    <div class="row"><h3 style="margin:0">Datos</h3><button class="pill" onclick="exportCSV()">Exportar CSV</button></div>
+    <div class="row"><h3 style="margin:0">Registros</h3><button class="pill" style="text-transform:none;letter-spacing:0" onclick="exportCSV()">Exportar CSV</button></div>
     <ul class="list">${ds.slice().reverse().slice(0,10).map(k=>{const x=S.days[k];
       return `<li><span>${dayLabel(k)}</span><span>${x.sleep}h · ${x.reaction??'—'}ms · niv ${x.memory??'—'} · ${x.attention??'—'}%</span></li>`}).join('')}</ul>
   </div>`;
@@ -596,43 +608,47 @@ window.exportCSV = () => {
   a.download='sleep-mind-lab.csv'; a.click();
 };
 
-/* gráficos — con grilla de fondo tipo papel milimetrado, coherente con el
-   resto de la identidad (antes eran gráficos "flotando" sin referencia). */
+/* gráficos — spec: trazo de serie 1.8px sin relleno, grilla 1px, ejes 1px,
+   tendencia punteada 4/4, puntos r=3 (r=4 el último, resaltado). */
 function sparkline(vals, labels){
   if(!vals.length) return '';
-  const W=300,H=90,P=6;
+  const W=306,H=118,P=8;
   const mn=Math.min(...vals,4), mx=Math.max(...vals,10);
   const x=i=>P+i*(W-2*P)/Math.max(vals.length-1,1);
-  const y=v=>H-P-((v-mn)/((mx-mn)||1))*(H-2*P);
+  const y=v=>H-28-((v-mn)/((mx-mn)||1))*(H-40);
   const pts=vals.map((v,i)=>`${x(i)},${y(v)}`).join(' ');
-  const grid=[0,.25,.5,.75,1].map(t=>`<line class="gridline" x1="${P}" y1="${P+t*(H-2*P)}" x2="${W-P}" y2="${P+t*(H-2*P)}"/>`).join('');
-  return `<svg viewBox="0 0 ${W} ${H+ (labels?16:0)}" style="margin-top:10px">
+  const grid=[.15,.5,.85].map(t=>`<line class="gridline" x1="0" y1="${8+t*(H-40)}" x2="${W}" y2="${8+t*(H-40)}"/>`).join('');
+  return `<svg viewBox="0 0 ${W} ${H}" style="margin-top:8px">
     ${grid}
-    <polyline points="${pts}" fill="none" stroke="var(--accent-2)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
-    ${vals.map((v,i)=>`<circle cx="${x(i)}" cy="${y(v)}" r="2.5" fill="var(--accent)"/>`).join('')}
-    ${labels?labels.map((l,i)=> i%Math.ceil(labels.length/4)===0?`<text class="gl" x="${x(i)}" y="${H+11}" text-anchor="middle">${l}</text>`:'').join(''):''}
+    <polyline points="${pts}" fill="none" stroke="var(--accent-2)" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/>
+    ${vals.map((v,i)=>`<circle cx="${x(i)}" cy="${y(v)}" r="${i===vals.length-1?4:3}" fill="${i===vals.length-1?'var(--accent)':'var(--accent-2)'}"/>`).join('')}
+    ${labels?labels.map((l,i)=> i%Math.ceil(labels.length/4)===0?`<text class="gl" x="${x(i)}" y="${H-6}" text-anchor="middle">${l}</text>`:'').join(''):''}
   </svg>`;
 }
-function scatter(xs,ys,unit){
-  const W=300,H=140,P=26;
-  const xm=Math.min(...xs)-.5, xM=Math.max(...xs)+.5;
-  const ym=Math.min(...ys), yM=Math.max(...ys);
-  const px=v=>P+((v-xm)/((xM-xm)||1))*(W-P-8);
-  const py=v=>H-P-((v-ym)/((yM-ym)||1))*(H-P-10);
+function scatter(xs,ys,unit,good){
+  const W=306,H=92,P=34;
+  const yMinV=Math.min(...ys), yMaxV=Math.max(...ys);
+  const pad=(yMaxV-yMinV)*.15||1;
+  const lo=yMinV-pad, hi=yMaxV+pad;
+  const xm=4.3, xM=8.7;
+  const px=v=>P+((v-xm)/(xM-xm))*(W-P-6);
+  const py=v=>76-((v-lo)/((hi-lo)||1))*64;
   const n=xs.length, mx=avg(xs), my=avg(ys);
   let num=0,den=0; for(let i=0;i<n;i++){num+=(xs[i]-mx)*(ys[i]-my);den+=(xs[i]-mx)**2;}
   const m=den?num/den:0, b=my-m*mx;
-  const grid=[.25,.5,.75].map(t=>`<line class="gridline" x1="${P}" y1="${8+t*(H-P-8)}" x2="${W-4}" y2="${8+t*(H-P-8)}"/>`).join('');
-  return `<svg viewBox="0 0 ${W} ${H}" style="margin-top:10px">
-    ${grid}
-    <line class="axis" x1="${P}" y1="${H-P}" x2="${W-4}" y2="${H-P}"/>
-    <line class="axis" x1="${P}" y1="8" x2="${P}" y2="${H-P}"/>
-    <line x1="${px(xm)}" y1="${py(m*xm+b)}" x2="${px(xM)}" y2="${py(m*xM+b)}" stroke="var(--accent-2)" stroke-width="1.5" stroke-dasharray="4 4" opacity=".8"/>
-    ${xs.map((v,i)=>`<circle cx="${px(v)}" cy="${py(ys[i])}" r="4" fill="var(--accent)" opacity=".9"/>`).join('')}
-    <text class="gl" x="${P}" y="${H-10}">${xm.toFixed(1)} h</text>
-    <text class="gl" x="${W-4}" y="${H-10}" text-anchor="end">${xM.toFixed(1)} h</text>
-    <text class="gl" x="0" y="14">${yM}${unit==='%'?'%':''}</text>
-    <text class="gl" x="0" y="${H-P}">${ym}${unit==='%'?'%':''}</text>
+  const accent = good? 'var(--accent-2)' : 'var(--accent)';
+  return `<svg viewBox="0 0 ${W} ${H}" style="margin-top:6px">
+    <line class="gridline" x1="${P}" y1="12" x2="${W-6}" y2="12"/>
+    <line class="gridline" x1="${P}" y1="44" x2="${W-6}" y2="44"/>
+    <line class="axis" x1="${P}" y1="76" x2="${W-6}" y2="76"/>
+    <line class="axis" x1="${P}" y1="12" x2="${P}" y2="76"/>
+    <line x1="${px(xm)}" y1="${py(m*xm+b)}" x2="${px(xM)}" y2="${py(m*xM+b)}" stroke="${accent}" stroke-width="1.4" stroke-dasharray="4 4" opacity=".85"/>
+    ${xs.map((v,i)=>`<circle cx="${px(v)}" cy="${py(ys[i])}" r="${i===xs.length-1?4:3}" fill="${i===xs.length-1?'var(--ink)':accent}"/>`).join('')}
+    <text class="gl" x="4" y="16">${Math.round(hi)}${unit==='%'?'%':''}</text>
+    <text class="gl" x="4" y="80">${Math.round(lo)}${unit==='%'?'%':''}</text>
+    <text class="gl" x="${P}" y="90" text-anchor="middle">${xm}h</text>
+    <text class="gl" x="${(P+W-6)/2}" y="90" text-anchor="middle">${((xm+xM)/2).toFixed(1)}h</text>
+    <text class="gl" x="${W-6}" y="90" text-anchor="end">${xM}h</text>
   </svg>`;
 }
 
@@ -641,31 +657,41 @@ function vAI(){
   const ds=withData();
   const d=day();
   const cs=cogScore(d);
+  const best = ds.map(k=>cogScore(S.days[k])).filter(v=>v!=null);
+  const bestVal = best.length? Math.max(...best) : null;
   const findings = analyze();
   return `
-  <div class="eyebrow">Análisis</div>
-  <h1>Qué dicen tus datos</h1>
-  <p class="muted" style="margin:0 0 18px">Basado en ${plural(ds.length,'día tuyo','días tuyos')}, no en promedios de otra gente.</p>
+  <div class="eyebrow">Generado hoy ${new Date().toLocaleTimeString('es',{hour:'2-digit',minute:'2-digit'})}</div>
+  <h1>Análisis</h1>
 
   ${cs!=null?`<div class="card">
-    <div class="row"><h2 style="margin:0">Rendimiento de hoy</h2><span class="pill ${cs>=70?'good':cs>=50?'warn':'bad'}">${cs}/100</span></div>
-    <div class="bar" style="margin-top:12px"><i style="width:${cs}%"></i></div>
-    <p class="tiny" style="margin:10px 0 0">Combina reacción, memoria y atención de hoy en un solo índice.</p>
+    <div class="row" style="align-items:flex-end">
+      <div><div class="tiny" style="letter-spacing:.1em">ÍNDICE COGNITIVO DE HOY</div>
+        <div style="display:flex;align-items:baseline;gap:6px;margin-top:5px"><span class="data" style="font-size:40px;color:var(--accent-2)">${cs}</span><span class="tiny">/ 100</span></div>
+      </div>
+      ${bestVal!=null?`<div style="text-align:right"><div class="tiny">TU MEJOR DÍA</div><div class="data" style="font-size:18px;margin-top:2px">${bestVal}</div></div>`:''}
+    </div>
+    <div class="bar-track" style="margin-top:12px;height:8px"><i style="width:${cs}%"></i></div>
+    <div class="row tiny" style="margin-top:8px"><span>BAJO</span><span>MEDIO</span><span>ÓPTIMO</span></div>
   </div>`:''}
 
+  ${ds.length? `<p class="tiny" style="margin:-4px 4px">Basado en ${plural(ds.length,'día tuyo','días tuyos')}, no en promedios de otra gente.</p>`:''}
+
   ${findings.map(f=>`<div class="card">
-    <div class="eyebrow" style="color:${f.tone}">${f.tag}</div>
-    <h3 style="margin-bottom:6px">${f.title}</h3>
-    <p class="muted" style="margin:0">${f.body}</p>
+    <div class="row" style="justify-content:flex-start;gap:8px"><span style="width:6px;height:6px;border-radius:50%;background:${f.tone};display:inline-block"></span><span class="eyebrow" style="color:${f.tone};margin:0">${f.tag}</span></div>
+    <h3 style="margin:8px 0 5px;font-size:15px">${f.title}</h3>
+    <p class="muted" style="margin:0;font-size:12px;line-height:17px">${f.body}</p>
   </div>`).join('')}
 
-  <div class="card">
-    <h3>Recomendaciones</h3>
-    <ul class="list">${recos().map(r=>`<li><span>${r}</span></li>`).join('')}</ul>
+  <div class="card elevated">
+    <div class="eyebrow" style="margin-bottom:10px">Recomendaciones</div>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      ${recos().map((r,i)=>`<div style="display:flex;gap:10px;align-items:flex-start"><span class="data" style="font-size:12px;color:var(--accent);width:16px">${String(i+1).padStart(2,'0')}</span><span style="flex:1;font-size:12.5px;line-height:18px">${r}</span></div>`).join('')}
+    </div>
   </div>
 
   <button class="btn ghost" onclick="shareApp()">Compartir la app</button>
-  <p class="tiny" style="text-align:center;margin-top:12px">Esto es un proyecto escolar, no un diagnóstico médico.</p>`;
+  <p class="tiny" style="text-align:center;margin-top:4px">Esto es un proyecto escolar, no un diagnóstico médico.</p>`;
 }
 
 function analyze(){
@@ -678,13 +704,13 @@ function analyze(){
   const sleeps=ds.map(k=>S.days[k].sleep);
   if(sleeps.length){
     const m=avg(sleeps);
-    out.push({tag:'Sueño',tone:m<7?'var(--bad)':'var(--good)',
+    out.push({tag:'Sueño',tone:m<7?'var(--warn)':'var(--good)',
       title:`Dormís ${m.toFixed(1)} h en promedio`,
       body: m<6.5? 'Estás bastante por debajo de las 8–10 h recomendadas para tu edad. A este nivel, la caída de atención suele notarse antes que la de memoria.'
           : m<8? 'Estás apenas por debajo del rango recomendado. Sumar 45 minutos suele ser el cambio más rentable.'
           : 'Estás dentro del rango recomendado para adolescentes.'});
     const sd = Math.sqrt(avg(sleeps.map(v=>(v-m)**2)));
-    if(sleeps.length>=3 && sd>1.3) out.push({tag:'Regularidad',tone:'var(--warn)',
+    if(sleeps.length>=3 && sd>1.3) out.push({tag:'Regularidad',tone:'var(--accent)',
       title:'Tus horarios son irregulares',
       body:`Tu sueño varía ±${sd.toFixed(1)} h entre días. La irregularidad afecta el rendimiento casi tanto como dormir poco, porque desalinea el reloj biológico.`});
   }
@@ -693,7 +719,7 @@ function analyze(){
     if(r==null) return;
     const helps = inv ? r<-0.3 : r>0.3;
     const hurts = inv ? r>0.3 : r<-0.3;
-    if(helps) out.push({tag:'Correlación',tone:'var(--good)',title:`Dormir más mejora tu ${name}`,
+    if(helps) out.push({tag:'Correlación',tone:'var(--accent-2)',title:`Dormir más mejora tu ${name}`,
       body:`En tus ${plural(xs.length,'día medido','días medidos')} la relación es clara (r = ${r.toFixed(2)}). ${inv?'Tus noches largas bajan los milisegundos de respuesta.':'Tus mejores puntajes caen en tus noches más largas.'}`});
     else if(hurts) out.push({tag:'Anomalía',tone:'var(--warn)',title:`Tu ${name} no sigue al sueño`,
       body:`La relación va al revés de lo esperado (r = ${r.toFixed(2)}). Suele pasar cuando hacés los tests a horas muy distintas o cuando hay práctica: mejorás por repetición, no por descanso.`});
@@ -715,11 +741,35 @@ function recos(){
   return r;
 }
 
+/* Compartir — antes: si navigator.share fallaba o no existía (Chrome de
+   escritorio, por ejemplo) cualquier error quedaba silenciado o caía en
+   un alert() feo, y parecía que el botón "no hacía nada". Ahora siempre
+   da una señal: comparte de verdad si puede, y si no, copia el link al
+   portapapeles y lo confirma con un toast en vez de un alert. */
 window.shareApp = () => {
   const txt='Sleep & Mind Lab: medí cómo tu sueño afecta tu concentración, memoria y reacción.';
-  if(navigator.share) navigator.share({title:'Sleep & Mind Lab',text:txt,url:location.href}).catch(()=>{});
-  else alert(txt+'\n'+location.href);
+  const url = location.href;
+  if(navigator.share){
+    navigator.share({title:'Sleep & Mind Lab',text:txt,url}).catch(()=>{});
+    return;
+  }
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(url)
+      .then(()=>toast('Link copiado al portapapeles'))
+      .catch(()=>promptFallback());
+  } else promptFallback();
+  function promptFallback(){ window.prompt('Copiá el link:', url); }
 };
+function toast(msg){
+  let t = document.getElementById('toast');
+  if(!t){ t=document.createElement('div'); t.id='toast';
+    t.style.cssText='position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + 100px);transform:translateX(-50%);background:var(--surface-2);border:1px solid var(--line-2);color:var(--ink);font-size:13px;font-weight:600;padding:11px 18px;border-radius:99px;z-index:60;box-shadow:0 8px 24px rgba(0,0,0,.4)';
+    document.body.appendChild(t);
+  }
+  t.textContent = msg; t.style.opacity='1';
+  clearTimeout(window._toastTimer);
+  window._toastTimer = setTimeout(()=>{ t.style.transition='opacity .3s'; t.style.opacity='0'; }, 2200);
+}
 
 /* arranque */
 render();
