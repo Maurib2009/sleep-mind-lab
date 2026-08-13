@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no">
+<meta name="theme-color" content="#080C1A">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Sleep &amp; Mind Lab</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+:root{
+  --bg:#080C1A;
+  --surface:#111834;
+  --surface-2:#182044;
+  --line:#232C56;
+  --violet:#7C6CF8;
+  --cyan:#3FD8E4;
+  --ink:#EEF2FF;
+  --muted:#8590BC;
+  --good:#4ADE9B;
+  --warn:#FFB454;
+  --bad:#FF6B81;
+  --r:18px;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0;background:var(--bg);color:var(--ink)}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  font-size:16px;line-height:1.45;
+  overscroll-behavior:none;
+  -webkit-font-smoothing:antialiased;
+}
+button{font-family:inherit;color:inherit;border:0;background:none;cursor:pointer}
+input,select{font-family:inherit;font-size:16px}
+
+/* ---------- shell ---------- */
+#app{
+  min-height:100dvh;
+  padding:calc(env(safe-area-inset-top) + 14px) 18px calc(env(safe-area-inset-bottom) + 96px);
+  max-width:520px;margin:0 auto;
+}
+.hidden{display:none !important}
+
+/* ---------- typography ---------- */
+h1{font-size:30px;line-height:1.1;letter-spacing:-.02em;margin:0 0 6px;font-weight:800}
+h2{font-size:20px;letter-spacing:-.01em;margin:0 0 4px;font-weight:700}
+h3{font-size:15px;margin:0 0 8px;font-weight:650}
+.eyebrow{
+  font-size:11px;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--cyan);font-weight:700;margin-bottom:8px
+}
+.muted{color:var(--muted);font-size:14px}
+.tiny{font-size:12px;color:var(--muted)}
+
+/* ---------- cards ---------- */
+.card{
+  background:var(--surface);border:1px solid var(--line);
+  border-radius:var(--r);padding:16px;margin-bottom:14px;
+}
+.card.tap:active{transform:scale(.985);transition:transform .1s}
+.row{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+
+/* ---------- buttons ---------- */
+.btn{
+  display:block;width:100%;text-align:center;
+  background:linear-gradient(135deg,var(--violet),#5B7BF5);
+  color:#fff;font-weight:700;font-size:16px;
+  padding:16px;border-radius:14px;
+}
+.btn:active{opacity:.85}
+.btn.ghost{background:var(--surface-2);border:1px solid var(--line);color:var(--ink)}
+.btn.sm{padding:11px;font-size:14px;border-radius:11px}
+
+/* ---------- stats ---------- */
+.stat{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:13px}
+.stat b{display:block;font-size:24px;font-weight:800;letter-spacing:-.02em}
+.stat span{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+
+/* ---------- sleep input ---------- */
+.hours{display:flex;align-items:center;justify-content:center;gap:18px;margin:10px 0 4px}
+.hours b{font-size:52px;font-weight:800;letter-spacing:-.04em;min-width:110px;text-align:center}
+.step{width:52px;height:52px;border-radius:50%;background:var(--surface-2);border:1px solid var(--line);font-size:26px;font-weight:600;display:flex;align-items:center;justify-content:center}
+.quality{display:flex;gap:8px;margin-top:10px}
+.q{flex:1;padding:13px 0;border-radius:12px;background:var(--surface-2);border:1px solid var(--line);font-weight:700;text-align:center}
+.q.on{background:var(--violet);border-color:var(--violet);color:#fff}
+
+/* ---------- tests ---------- */
+#arena{
+  position:fixed;inset:0;z-index:50;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;text-align:center;padding:24px;
+  background:var(--bg);
+}
+#arena .big{font-size:60px;font-weight:800;letter-spacing:-.03em}
+#arena .label{font-size:17px;color:var(--muted);margin-top:10px;max-width:280px}
+#arena .exit{position:absolute;top:calc(env(safe-area-inset-top) + 14px);right:18px;font-size:14px;color:var(--muted)}
+.seq{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;width:min(300px,80vw);margin-top:26px}
+.key{aspect-ratio:1;border-radius:16px;background:var(--surface-2);border:1px solid var(--line);font-size:26px;font-weight:700;display:flex;align-items:center;justify-content:center}
+.key:active,.key.flash{background:var(--violet);border-color:var(--violet)}
+
+/* ---------- chart ---------- */
+svg{display:block;width:100%;overflow:visible}
+.axis{stroke:var(--line);stroke-width:1}
+.gl{fill:var(--muted);font-size:10px}
+
+/* ---------- nav ---------- */
+nav{
+  position:fixed;left:0;right:0;bottom:0;z-index:40;
+  display:flex;justify-content:space-around;
+  background:rgba(8,12,26,.92);backdrop-filter:blur(14px);
+  border-top:1px solid var(--line);
+  padding:9px 6px calc(env(safe-area-inset-bottom) + 9px);
+}
+nav button{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:10px;color:var(--muted);font-weight:600}
+nav button.on{color:var(--ink)}
+nav .dot{width:22px;height:22px;border-radius:8px;background:var(--surface-2);border:1px solid var(--line)}
+nav button.on .dot{background:linear-gradient(135deg,var(--violet),var(--cyan));border-color:transparent}
+
+/* ---------- misc ---------- */
+.bar{height:7px;border-radius:99px;background:var(--surface-2);overflow:hidden}
+.bar i{display:block;height:100%;background:linear-gradient(90deg,var(--cyan),var(--violet))}
+.pill{display:inline-block;font-size:11px;font-weight:700;padding:4px 9px;border-radius:99px;background:var(--surface-2);border:1px solid var(--line);color:var(--muted)}
+.pill.good{color:var(--good);border-color:rgba(74,222,155,.35)}
+.pill.warn{color:var(--warn);border-color:rgba(255,180,84,.35)}
+.pill.bad{color:var(--bad);border-color:rgba(255,107,129,.35)}
+ul.list{list-style:none;padding:0;margin:0}
+ul.list li{padding:11px 0;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;font-size:14px}
+ul.list li:last-child{border-bottom:0}
+.fade{animation:fade .32s ease both}
+@keyframes fade{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.fade{animation:none}}
+.logo{width:56px;height:56px;border-radius:18px;background:linear-gradient(140deg,var(--violet),var(--cyan));margin-bottom:18px}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<nav id="nav" class="hidden"></nav>
+<div id="arena" class="hidden"></div>
+
+<script>
+/* ============ almacenamiento seguro ============ */
+const mem = {};
+const DB = {
+  get(k,d){ try{ const v = localStorage.getItem(k); return v?JSON.parse(v):(k in mem?mem[k]:d);}catch(e){ return (k in mem)?mem[k]:d; } },
+  set(k,v){ mem[k]=v; try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){} }
+};
+
+/* ============ estado ============ */
+const today = () => new Date().toISOString().slice(0,10);
+const dayLabel = s => { const d=new Date(s+'T12:00'); return d.toLocaleDateString('es',{day:'numeric',month:'short'}); };
+
+let S = DB.get('sml_data', { days:{}, challengeStart:null, name:null });
+const save = () => DB.set('sml_data', S);
+function day(d=today()){ if(!S.days[d]) S.days[d]={sleep:null,quality:null,reaction:null,memory:null,attention:null}; return S.days[d]; }
+const dates = () => Object.keys(S.days).sort();
+const withData = () => dates().filter(d=>S.days[d].sleep!=null);
+
+/* ============ métricas ============ */
+// puntaje cognitivo 0-100 combinando los 3 tests disponibles
+function cogScore(d){
+  const r=[];
+  if(d.reaction!=null) r.push(clamp(100-(d.reaction-180)/4,0,100));
+  if(d.memory!=null)   r.push(clamp(d.memory*11,0,100));
+  if(d.attention!=null)r.push(clamp(d.attention,0,100));
+  return r.length? Math.round(r.reduce((a,b)=>a+b)/r.length) : null;
+}
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const avg = a => a.length? a.reduce((x,y)=>x+y,0)/a.length : null;
+
+function pearson(xs,ys){
+  const n=xs.length; if(n<3) return null;
+  const mx=avg(xs), my=avg(ys);
+  let num=0,dx=0,dy=0;
+  for(let i=0;i<n;i++){const a=xs[i]-mx,b=ys[i]-my;num+=a*b;dx+=a*a;dy+=b*b;}
+  return (dx&&dy)? num/Math.sqrt(dx*dy) : null;
+}
+function pairs(field){
+  const xs=[],ys=[];
+  withData().forEach(k=>{ const d=S.days[k]; if(d[field]!=null){xs.push(d.sleep);ys.push(d[field]);} });
+  return [xs,ys];
+}
+
+/* ============ router ============ */
+const app = document.getElementById('app');
+const navEl = document.getElementById('nav');
+let view = DB.get('sml_seen',false) ? 'home' : 'welcome';
+
+const TABS = [['home','Inicio'],['sleep','Sueño'],['tests','Tests'],['data','Datos'],['ai','Análisis']];
+
+function go(v){ view=v; render(); window.scrollTo(0,0); }
+
+function render(){
+  navEl.classList.toggle('hidden', view==='welcome');
+  navEl.innerHTML = TABS.map(([id,label])=>
+    `<button class="${view===id?'on':''}" onclick="go('${id}')"><span class="dot"></span>${label}</button>`).join('');
+  app.className='fade';
+  app.innerHTML = ({welcome:vWelcome,home:vHome,sleep:vSleep,tests:vTests,data:vData,ai:vAI})[view]();
+  void app.offsetWidth;
+}
+window.go = go;
+
+/* ============ pantallas ============ */
+function vWelcome(){
+  return `
+  <div style="min-height:78dvh;display:flex;flex-direction:column;justify-content:center">
+    <div class="logo"></div>
+    <h1>Sleep &amp; Mind Lab</h1>
+    <p class="muted" style="font-size:17px;margin:0 0 26px">Conocé cómo dormís, pensás y rendís.</p>
+    <div class="card">
+      <h3>Cómo funciona</h3>
+      <p class="muted" style="margin:0">Anotás cuánto dormiste, hacés tres tests cortos de reacción, memoria y atención, y la app cruza tus propios datos para mostrarte cuánto te cuesta cada hora de sueño perdida.</p>
+    </div>
+    <button class="btn" onclick="DB.set('sml_seen',true);go('sleep')">Comenzar análisis</button>
+    <p class="tiny" style="text-align:center;margin-top:14px">Tus datos se guardan solo en este teléfono.</p>
+  </div>`;
+}
+
+function vHome(){
+  const d = day();
+  const done = ['reaction','memory','attention'].filter(k=>d[k]!=null).length;
+  const cs = cogScore(d);
+  const ds = withData();
+  const last7 = ds.slice(-7).map(k=>S.days[k].sleep);
+  return `
+  <div class="eyebrow">${new Date().toLocaleDateString('es',{weekday:'long',day:'numeric',month:'long'})}</div>
+  <h1>Hoy</h1>
+  <p class="muted" style="margin:0 0 18px">${d.sleep==null?'Todavía no registraste tu sueño de anoche.':`Dormiste ${d.sleep} h · calidad ${d.quality??'—'}/5`}</p>
+
+  <div class="grid3" style="margin-bottom:14px">
+    <div class="stat"><b>${d.sleep??'—'}</b><span>Horas</span></div>
+    <div class="stat"><b>${cs??'—'}</b><span>Cognitivo</span></div>
+    <div class="stat"><b>${done}/3</b><span>Tests</span></div>
+  </div>
+
+  ${d.sleep==null?`<button class="btn" onclick="go('sleep')">Registrar sueño</button>`
+    : done<3?`<button class="btn" onclick="go('tests')">Continuar tests (${3-done} restantes)</button>`
+    : `<button class="btn" onclick="go('ai')">Ver tu análisis de hoy</button>`}
+
+  <div class="card" style="margin-top:16px">
+    <div class="row"><h3 style="margin:0">Últimos 7 días</h3><span class="tiny">${ds.length} días registrados</span></div>
+    ${last7.length? sparkline(last7) : `<p class="muted" style="margin:10px 0 0">Registrá al menos un día para ver tu curva de sueño.</p>`}
+  </div>
+
+  ${challengeCard()}`;
+}
+
+function challengeCard(){
+  if(!S.challengeStart){
+    return `<div class="card">
+      <div class="eyebrow">Challenge</div>
+      <h3>7 días de sueño cuidado</h3>
+      <p class="muted" style="margin:0 0 12px">La app guarda tu rendimiento actual, y después de 7 días te muestra cuánto cambió.</p>
+      <button class="btn sm" onclick="startChallenge()">Empezar challenge</button>
+    </div>`;
+  }
+  const start = S.challengeStart;
+  const elapsed = Math.floor((new Date(today())-new Date(start))/86400000);
+  const inRange = d => d>=start;
+  const before=[],after=[];
+  dates().forEach(k=>{ const c=cogScore(S.days[k]); if(c==null) return; (inRange(k)?after:before).push(c); });
+  const b=avg(before), a=avg(after);
+  const diff = (b!=null&&a!=null)? Math.round(a-b) : null;
+  return `<div class="card">
+    <div class="row"><div class="eyebrow" style="margin:0">Challenge · día ${clamp(elapsed+1,1,7)} de 7</div>
+    <span class="pill ${diff==null?'':diff>0?'good':diff<0?'bad':'warn'}">${diff==null?'sin comparar':(diff>0?'+':'')+diff+' pts'}</span></div>
+    <div class="bar" style="margin:12px 0"><i style="width:${clamp((elapsed+1)/7*100,6,100)}%"></i></div>
+    <div class="row tiny"><span>Antes: ${b?Math.round(b):'—'}</span><span>Ahora: ${a?Math.round(a):'—'}</span></div>
+    ${elapsed>=7?`<button class="btn sm ghost" style="margin-top:12px" onclick="S.challengeStart=null;save();render()">Cerrar challenge</button>`:''}
+  </div>`;
+}
+window.startChallenge=()=>{S.challengeStart=today();save();render()};
+
+/* ---- sueño ---- */
+let draftH = null, draftQ = null;
+function vSleep(){
+  const d = day();
+  if(draftH===null) draftH = d.sleep ?? 7.5;
+  if(draftQ===null) draftQ = d.quality;
+  const hist = dates().slice(-14).reverse();
+  return `
+  <div class="eyebrow">Registro de sueño</div>
+  <h1>¿Cuánto dormiste?</h1>
+  <div class="card" style="margin-top:16px">
+    <div class="hours">
+      <button class="step" onclick="setH(-0.5)">–</button>
+      <b>${draftH.toFixed(1)}<span style="font-size:20px;color:var(--muted)">h</span></b>
+      <button class="step" onclick="setH(0.5)">+</button>
+    </div>
+    <p class="tiny" style="text-align:center;margin:0">${sleepNote(draftH)}</p>
+  </div>
+  <div class="card">
+    <h3>Calidad del descanso</h3>
+    <div class="quality">${[1,2,3,4,5].map(n=>`<button class="q ${draftQ===n?'on':''}" onclick="draftQ=${n};render()">${n}</button>`).join('')}</div>
+    <div class="row tiny" style="margin-top:8px"><span>Muy mala</span><span>Excelente</span></div>
+  </div>
+  <button class="btn" onclick="saveSleep()">Guardar ${d.sleep!=null?'cambios':'registro'}</button>
+
+  <div class="card" style="margin-top:20px">
+    <h3>Historial</h3>
+    ${hist.length? `<ul class="list">${hist.map(k=>{
+      const x=S.days[k]; const c=cogScore(x);
+      return `<li><span>${dayLabel(k)}${k===today()?' · hoy':''}</span>
+      <span>${x.sleep!=null?x.sleep+' h':'—'} <span class="tiny">· cog ${c??'—'}</span></span></li>`;}).join('')}</ul>`
+      : `<p class="muted" style="margin:0">Sin registros todavía.</p>`}
+  </div>`;
+}
+function sleepNote(h){
+  if(h<5) return 'Privación severa: el impacto cognitivo suele ser fuerte.';
+  if(h<6.5) return 'Sueño corto para un adolescente.';
+  if(h<=9) return 'Dentro del rango recomendado (8–10 h en adolescentes).';
+  return 'Sueño largo: puede indicar deuda acumulada.';
+}
+window.setH = v => { draftH = clamp(+(draftH+v).toFixed(1),0,14); render(); };
+window.saveSleep = () => { const d=day(); d.sleep=draftH; d.quality=draftQ; save(); draftH=null;draftQ=null; go('tests'); };
+
+/* ---- tests ---- */
+function vTests(){
+  const d = day();
+  const t = [
+    ['reaction','Tiempo de reacción','Tocá apenas la pantalla cambie de color. 5 intentos.', d.reaction!=null? d.reaction+' ms':null],
+    ['memory','Memoria a corto plazo','Repetí la secuencia. Se alarga hasta que fallás.', d.memory!=null? 'nivel '+d.memory:null],
+    ['attention','Atención sostenida','Tocá solo las letras, ignorá los números. 45 s.', d.attention!=null? d.attention+'%':null],
+  ];
+  return `
+  <div class="eyebrow">Tests de hoy</div>
+  <h1>Medí tu mente</h1>
+  <p class="muted" style="margin:0 0 18px">Hacelos siempre a una hora parecida para que la comparación sirva.</p>
+  ${t.map(([id,name,desc,res])=>`
+    <div class="card tap" onclick="start('${id}')">
+      <div class="row"><h2 style="margin:0">${name}</h2>
+      <span class="pill ${res?'good':''}">${res||'pendiente'}</span></div>
+      <p class="muted" style="margin:6px 0 0">${desc}</p>
+    </div>`).join('')}
+  ${d.reaction!=null&&d.memory!=null&&d.attention!=null?`<button class="btn" onclick="go('ai')">Ver análisis</button>`:''}`;
+}
+
+const arena = document.getElementById('arena');
+function openArena(html){ arena.classList.remove('hidden'); arena.innerHTML = `<button class="exit" onclick="closeArena()">Salir</button>`+html; }
+function closeArena(){ arena.classList.add('hidden'); arena.innerHTML=''; clearTimeout(T1); clearInterval(T2); render(); }
+window.closeArena = closeArena;
+let T1,T2;
+
+window.start = id => ({reaction:runReaction,memory:runMemory,attention:runAttention})[id]();
+
+/* reacción */
+function runReaction(){
+  const times=[]; let n=0, t0=0, ready=false;
+  const step=()=>{
+    if(n>=5){ const best=Math.round(avg(times)); day().reaction=best; save();
+      openArena(`<div class="big">${best} ms</div><div class="label">Promedio de 5 intentos. Un adulto descansado ronda los 250 ms.</div>
+      <button class="btn" style="max-width:260px;margin-top:26px" onclick="closeArena()">Listo</button>`); return; }
+    ready=false;
+    openArena(`<div class="label">Esperá al violeta…</div><div class="big" style="margin-top:14px">${n+1}/5</div>`);
+    arena.style.background='var(--bg)';
+    arena.onclick=()=>{ if(!ready){ arena.style.background='var(--bg)'; } };
+    T1=setTimeout(()=>{
+      arena.style.background='var(--violet)';
+      arena.innerHTML=`<div class="big">¡Ahora!</div>`;
+      ready=true; t0=performance.now();
+      arena.onclick=()=>{ if(!ready)return; ready=false; times.push(performance.now()-t0); n++; arena.style.background='var(--bg)'; arena.onclick=null; setTimeout(step,420); };
+    }, 1200+Math.random()*2600);
+  };
+  step();
+}
+
+/* memoria */
+function runMemory(){
+  let level=2, seq=[], input=[];
+  const pad = i => `<button class="key" id="k${i}" onclick="tap(${i})">${i+1}</button>`;
+  const board = msg => `<div class="label">${msg}</div><div class="seq">${[...Array(9)].map((_,i)=>pad(i)).join('')}</div>`;
+  const show = () => {
+    seq=[...Array(level)].map(()=>Math.floor(Math.random()*9)); input=[];
+    openArena(board(`Memorizá · nivel ${level}`));
+    document.querySelectorAll('.key').forEach(k=>k.style.pointerEvents='none');
+    seq.forEach((v,i)=>setTimeout(()=>{
+      const el=document.getElementById('k'+v); if(!el)return;
+      el.classList.add('flash'); setTimeout(()=>el.classList.remove('flash'),380);
+    }, 650*i+400));
+    setTimeout(()=>{ const a=document.querySelector('.label'); if(a)a.textContent='Repetila';
+      document.querySelectorAll('.key').forEach(k=>k.style.pointerEvents='auto'); }, 650*seq.length+450);
+  };
+  window.tap = i => {
+    input.push(i);
+    if(input[input.length-1]!==seq[input.length-1]){
+      const score=level-1; day().memory=score; save();
+      openArena(`<div class="big">Nivel ${score}</div><div class="label">Recordaste ${score} elementos seguidos. El promedio ronda 5 a 7.</div>
+      <button class="btn" style="max-width:260px;margin-top:26px" onclick="closeArena()">Listo</button>`); return;
+    }
+    if(input.length===seq.length){ level++; setTimeout(show,600); }
+  };
+  show();
+}
+
+/* atención */
+function runAttention(){
+  let hits=0, misses=0, falses=0, total=0, left=45;
+  const chars='ABCDEFGHJKLMNPRSTUVXYZ', nums='0123456789';
+  let current=null, answered=false;
+  const tick=()=>{
+    if(current&&!answered&&current.isLetter) misses++;
+    answered=false;
+    const isLetter=Math.random()<0.65;
+    const c = isLetter? chars[Math.floor(Math.random()*chars.length)] : nums[Math.floor(Math.random()*10)];
+    current={isLetter}; total+= isLetter?1:0;
+    const el=document.getElementById('stim'); if(el){ el.textContent=c; el.style.color= 'var(--ink)'; }
+    const tl=document.getElementById('tl'); if(tl) tl.textContent=left+' s';
+  };
+  openArena(`<div class="label" id="tl">45 s</div><div class="big" id="stim" style="font-size:92px">·</div>
+    <div class="label">Tocá solo si es una <b>letra</b></div>`);
+  arena.onclick=()=>{
+    if(!current||answered)return; answered=true;
+    if(current.isLetter){hits++; flash('var(--good)');} else {falses++; flash('var(--bad)');}
+  };
+  const flash=c=>{const el=document.getElementById('stim'); if(el){el.style.color=c;}};
+  T2=setInterval(()=>{
+    left--; tick();
+    if(left<=0){
+      clearInterval(T2); arena.onclick=null;
+      const acc = total? clamp(Math.round((hits/total)*100 - falses*4),0,100) : 0;
+      day().attention=acc; save();
+      openArena(`<div class="big">${acc}%</div><div class="label">${hits} aciertos · ${misses} omisiones · ${falses} errores por impulso.</div>
+      <button class="btn" style="max-width:260px;margin-top:26px" onclick="closeArena()">Listo</button>`);
+    }
+  },1000);
+  tick();
+}
+
+/* ---- datos ---- */
+function vData(){
+  const ds = withData();
+  if(ds.length<2) return `<div class="eyebrow">Dashboard</div><h1>Tus datos</h1>
+    <div class="card"><p class="muted" style="margin:0">Necesitás al menos 2 días registrados para ver comparaciones. Llevás ${ds.length}.</p></div>
+    <button class="btn ghost" onclick="go('sleep')">Registrar un día</button>`;
+
+  const rows = [
+    ['reaction','Sueño vs reacción','ms', true],
+    ['memory','Sueño vs memoria','nivel', false],
+    ['attention','Sueño vs atención','%', false],
+  ];
+  const sleeps = ds.map(k=>S.days[k].sleep);
+  const cogs = ds.map(k=>cogScore(S.days[k])).filter(v=>v!=null);
+  return `
+  <div class="eyebrow">Dashboard</div>
+  <h1>Tus datos</h1>
+  <div class="grid2" style="margin:16px 0 14px">
+    <div class="stat"><b>${avg(sleeps).toFixed(1)} h</b><span>Sueño promedio</span></div>
+    <div class="stat"><b>${cogs.length?Math.round(avg(cogs)):'—'}</b><span>Cognitivo promedio</span></div>
+  </div>
+
+  <div class="card">
+    <h3>Evolución del sueño</h3>
+    ${sparkline(ds.slice(-14).map(k=>S.days[k].sleep), ds.slice(-14).map(dayLabel))}
+  </div>
+
+  ${rows.map(([f,title,unit,inv])=>{
+    const [xs,ys]=pairs(f);
+    if(xs.length<2) return `<div class="card"><h3>${title}</h3><p class="muted" style="margin:0">Faltan datos (${xs.length}/2 días con este test).</p></div>`;
+    const r = pearson(xs,ys);
+    const strength = r==null?'—':Math.abs(r)>.6?'fuerte':Math.abs(r)>.3?'moderada':'débil';
+    const dir = r==null?'':(inv? (r<0?'good':'warn') : (r>0?'good':'warn'));
+    return `<div class="card">
+      <div class="row"><h3 style="margin:0">${title}</h3>
+      <span class="pill ${dir}">${r==null?'—':'r = '+r.toFixed(2)}</span></div>
+      ${scatter(xs,ys,unit)}
+      <p class="tiny" style="margin:8px 0 0">Relación ${strength}${r!=null?(r<0?' e inversa':' y directa'):''} entre horas de sueño y ${title.split('vs ')[1]}. Con ${xs.length} días, tomalo como tendencia, no como prueba.</p>
+    </div>`;
+  }).join('')}
+
+  <div class="card">
+    <div class="row"><h3 style="margin:0">Datos</h3><button class="pill" onclick="exportCSV()">Exportar CSV</button></div>
+    <ul class="list">${ds.slice().reverse().slice(0,10).map(k=>{const x=S.days[k];
+      return `<li><span>${dayLabel(k)}</span><span class="tiny">${x.sleep}h · ${x.reaction??'—'}ms · niv ${x.memory??'—'} · ${x.attention??'—'}%</span></li>`}).join('')}</ul>
+  </div>`;
+}
+
+window.exportCSV = () => {
+  const head='fecha,horas,calidad,reaccion_ms,memoria_nivel,atencion_pct,cognitivo\n';
+  const body=dates().map(k=>{const d=S.days[k];return [k,d.sleep??'',d.quality??'',d.reaction??'',d.memory??'',d.attention??'',cogScore(d)??''].join(',')}).join('\n');
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([head+body],{type:'text/csv'}));
+  a.download='sleep-mind-lab.csv'; a.click();
+};
+
+/* gráficos */
+function sparkline(vals, labels){
+  if(!vals.length) return '';
+  const W=300,H=90,P=6;
+  const mn=Math.min(...vals,4), mx=Math.max(...vals,10);
+  const x=i=>P+i*(W-2*P)/Math.max(vals.length-1,1);
+  const y=v=>H-P-((v-mn)/((mx-mn)||1))*(H-2*P);
+  const pts=vals.map((v,i)=>`${x(i)},${y(v)}`).join(' ');
+  return `<svg viewBox="0 0 ${W} ${H+ (labels?16:0)}" style="margin-top:10px">
+    <polyline points="${pts}" fill="none" stroke="url(#g)" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+    <defs><linearGradient id="g" x1="0" x2="1"><stop offset="0" stop-color="#3FD8E4"/><stop offset="1" stop-color="#7C6CF8"/></linearGradient></defs>
+    ${vals.map((v,i)=>`<circle cx="${x(i)}" cy="${y(v)}" r="3" fill="#7C6CF8"/>`).join('')}
+    ${labels?labels.map((l,i)=> i%Math.ceil(labels.length/4)===0?`<text class="gl" x="${x(i)}" y="${H+11}" text-anchor="middle">${l}</text>`:'').join(''):''}
+  </svg>`;
+}
+function scatter(xs,ys,unit){
+  const W=300,H=140,P=26;
+  const xm=Math.min(...xs)-.5, xM=Math.max(...xs)+.5;
+  const ym=Math.min(...ys), yM=Math.max(...ys);
+  const px=v=>P+((v-xm)/((xM-xm)||1))*(W-P-8);
+  const py=v=>H-P-((v-ym)/((yM-ym)||1))*(H-P-10);
+  // línea de tendencia
+  const n=xs.length, mx=avg(xs), my=avg(ys);
+  let num=0,den=0; for(let i=0;i<n;i++){num+=(xs[i]-mx)*(ys[i]-my);den+=(xs[i]-mx)**2;}
+  const m=den?num/den:0, b=my-m*mx;
+  return `<svg viewBox="0 0 ${W} ${H}" style="margin-top:10px">
+    <line class="axis" x1="${P}" y1="${H-P}" x2="${W-4}" y2="${H-P}"/>
+    <line class="axis" x1="${P}" y1="8" x2="${P}" y2="${H-P}"/>
+    <line x1="${px(xm)}" y1="${py(m*xm+b)}" x2="${px(xM)}" y2="${py(m*xM+b)}" stroke="#3FD8E4" stroke-width="1.5" stroke-dasharray="4 4" opacity=".7"/>
+    ${xs.map((v,i)=>`<circle cx="${px(v)}" cy="${py(ys[i])}" r="4.5" fill="#7C6CF8" opacity=".9"/>`).join('')}
+    <text class="gl" x="${P}" y="${H-10}">${xm.toFixed(1)} h</text>
+    <text class="gl" x="${W-4}" y="${H-10}" text-anchor="end">${xM.toFixed(1)} h</text>
+    <text class="gl" x="0" y="14">${yM}${unit==='%'?'%':''}</text>
+    <text class="gl" x="0" y="${H-P}">${ym}${unit==='%'?'%':''}</text>
+  </svg>`;
+}
+
+/* ---- análisis ---- */
+function vAI(){
+  const ds=withData();
+  const d=day();
+  const cs=cogScore(d);
+  const findings = analyze();
+  return `
+  <div class="eyebrow">Análisis</div>
+  <h1>Qué dicen tus datos</h1>
+  <p class="muted" style="margin:0 0 18px">Basado en ${ds.length} día${ds.length===1?'':'s'} tuyo${ds.length===1?'':'s'}, no en promedios de otra gente.</p>
+
+  ${cs!=null?`<div class="card">
+    <div class="row"><h2 style="margin:0">Rendimiento de hoy</h2><span class="pill ${cs>=70?'good':cs>=50?'warn':'bad'}">${cs}/100</span></div>
+    <div class="bar" style="margin-top:12px"><i style="width:${cs}%"></i></div>
+    <p class="tiny" style="margin:10px 0 0">Combina reacción, memoria y atención de hoy en un solo índice.</p>
+  </div>`:''}
+
+  ${findings.map(f=>`<div class="card">
+    <div class="eyebrow" style="color:${f.tone}">${f.tag}</div>
+    <h3 style="margin-bottom:6px">${f.title}</h3>
+    <p class="muted" style="margin:0">${f.body}</p>
+  </div>`).join('')}
+
+  <div class="card">
+    <h3>Recomendaciones</h3>
+    <ul class="list">${recos().map(r=>`<li><span>${r}</span></li>`).join('')}</ul>
+  </div>
+
+  <button class="btn ghost" onclick="shareApp()">Compartir la app</button>
+  <p class="tiny" style="text-align:center;margin-top:12px">Esto es un proyecto escolar, no un diagnóstico médico.</p>`;
+}
+
+function analyze(){
+  const out=[];
+  const ds=withData();
+  if(ds.length<3){
+    out.push({tag:'Datos',tone:'var(--warn)',title:'Todavía es pronto para conclusiones',
+      body:`Llevás ${ds.length} día${ds.length===1?'':'s'}. Con 5 a 7 días la app ya puede separar una tendencia real de un día malo suelto.`});
+  }
+  const sleeps=ds.map(k=>S.days[k].sleep);
+  if(sleeps.length){
+    const m=avg(sleeps);
+    out.push({tag:'Sueño',tone:m<7?'var(--bad)':'var(--good)',
+      title:`Dormís ${m.toFixed(1)} h en promedio`,
+      body: m<6.5? 'Estás bastante por debajo de las 8–10 h recomendadas para tu edad. A este nivel, la caída de atención suele notarse antes que la de memoria.'
+          : m<8? 'Estás apenas por debajo del rango recomendado. Sumar 45 minutos suele ser el cambio más rentable.'
+          : 'Estás dentro del rango recomendado para adolescentes.'});
+    const sd = Math.sqrt(avg(sleeps.map(v=>(v-m)**2)));
+    if(sleeps.length>=3 && sd>1.3) out.push({tag:'Regularidad',tone:'var(--warn)',
+      title:'Tus horarios son irregulares',
+      body:`Tu sueño varía ±${sd.toFixed(1)} h entre días. La irregularidad afecta el rendimiento casi tanto como dormir poco, porque desalinea el reloj biológico.`});
+  }
+  [['reaction','tiempo de reacción',true],['memory','memoria',false],['attention','atención',false]].forEach(([f,name,inv])=>{
+    const [xs,ys]=pairs(f); const r=pearson(xs,ys);
+    if(r==null) return;
+    const helps = inv ? r<-0.3 : r>0.3;
+    const hurts = inv ? r>0.3 : r<-0.3;
+    if(helps) out.push({tag:'Correlación',tone:'var(--good)',title:`Dormir más mejora tu ${name}`,
+      body:`En tus ${xs.length} días medidos la relación es clara (r = ${r.toFixed(2)}). ${inv?'Tus noches largas bajan los milisegundos de respuesta.':'Tus mejores puntajes caen en tus noches más largas.'}`});
+    else if(hurts) out.push({tag:'Anomalía',tone:'var(--warn)',title:`Tu ${name} no sigue al sueño`,
+      body:`La relación va al revés de lo esperado (r = ${r.toFixed(2)}). Suele pasar cuando hacés los tests a horas muy distintas o cuando hay práctica: mejorás por repetición, no por descanso.`});
+    else out.push({tag:'Correlación',tone:'var(--muted)',title:`Sin relación clara con tu ${name}`,
+      body:`r = ${r.toFixed(2)} sobre ${xs.length} días. O el efecto es chico, o falta rango: si todos tus días son parecidos en horas, no hay contraste que medir.`});
+  });
+  return out;
+}
+
+function recos(){
+  const ds=withData(); const r=[];
+  const m = ds.length? avg(ds.map(k=>S.days[k].sleep)) : null;
+  const best = ds.map(k=>({k,c:cogScore(S.days[k])})).filter(o=>o.c!=null).sort((a,b)=>b.c-a.c)[0];
+  if(m!=null && m<8) r.push(`Adelantá la hora de dormir 30 min esta semana.`);
+  if(best) r.push(`Tu mejor día fue el ${dayLabel(best.k)} con ${S.days[best.k].sleep} h: usá eso como objetivo.`);
+  r.push('Estudiá lo más difícil en tus primeras horas despiertas, no de madrugada.');
+  r.push('Hacé los tests siempre a la misma hora para que la comparación sea válida.');
+  if(!S.challengeStart) r.push('Arrancá el challenge de 7 días para medir un antes y un después.');
+  return r;
+}
+
+window.shareApp = () => {
+  const txt='Sleep & Mind Lab: medí cómo tu sueño afecta tu concentración, memoria y reacción.';
+  if(navigator.share) navigator.share({title:'Sleep & Mind Lab',text:txt,url:location.href}).catch(()=>{});
+  else alert(txt+'\n'+location.href);
+};
+
+/* arranque */
+render();
+if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
+</script>
+</body>
+</html>
