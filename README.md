@@ -24,8 +24,10 @@ Abrí `http://localhost:8000`. El service worker (cache offline) necesita `local
    **Esto es importante.** El service worker sirve todo desde cache primero — si no cambiás este número, quien ya abrió la app antes sigue viendo la versión vieja aunque hayas publicado la nueva. Es el error más común al trabajar con service workers.
 
 3. `git add . && git commit -m "..." && git push`
-4. Cloudflare Pages detecta el push y publica solo, en 1-2 minutos.
+4. Cloudflare detecta el push al repo de GitHub y publica solo, en 1-2 minutos.
 
 ## URL pública
 
-_(se completa al final del deploy)_
+https://sleep-mind-lab.maurizio-binda-09.workers.dev
+
+(Se publica como Worker con integración Git de Cloudflare, conectado al repo [Maurib2009/sleep-mind-lab](https://github.com/Maurib2009/sleep-mind-lab) — no es Cloudflare Pages clásico, pero el resultado es el mismo: push a GitHub → redeploy automático.)
