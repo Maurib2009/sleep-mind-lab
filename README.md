@@ -2,7 +2,9 @@
 
 App web (PWA) que cruza horas de sueño contra tres medidas de rendimiento cognitivo (tiempo de reacción, memoria a corto plazo y atención sostenida), usando los datos del propio usuario en vez de promedios poblacionales. Proyecto CAS del IB.
 
-Es HTML/CSS/JS vanilla, sin dependencias, sin build step y sin backend: todo corre en el navegador y los datos quedan guardados solo en el `localStorage` de quien la usa. Nadie más los ve.
+Es HTML/CSS/JS vanilla, sin build step: todo corre en el navegador y los datos quedan guardados en el `localStorage` de quien la usa. Opcionalmente, si se crea una cuenta (email + contraseña), los registros también se sincronizan a Supabase para poder verlos desde otro dispositivo — sin cuenta, sigue siendo 100% local. Nadie más ve los datos de otra persona (ver `supabase-schema.sql`, con RLS por usuario).
+
+**Backend (Supabase)**: proyecto `jukistinzrszdzyosqyk`. La URL y la clave `anon` están directamente en `index.html` (son públicas por diseño, la seguridad real la da RLS en la base, no ocultar la clave). Para replicar la base en otro proyecto, correr `supabase-schema.sql` en el SQL Editor.
 
 ## Correr localmente
 

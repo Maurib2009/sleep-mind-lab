@@ -201,6 +201,13 @@ ul.list li span:last-child{font-size:11px;color:var(--muted);text-align:right}
 <nav id="nav" class="hidden"></nav>
 <div id="arena" class="hidden"></div>
 
+<!-- Cliente de Supabase, solo para la cuenta/sincronización opcional.
+     Va acá (sin `defer`, justo antes del script principal) para que
+     `window.supabase` ya exista cuando corre `initSupabase()` más abajo.
+     Si esto no llega a cargar (sin internet la primera vez, por ejemplo)
+     la app entera sigue andando 100% local -- ver los chequeos
+     `if (window.supabase...)` en el script de abajo. -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script>
 /* ============ almacenamiento seguro ============ */
 const mem = {};
@@ -214,7 +221,7 @@ const today = () => new Date().toISOString().slice(0,10);
 const dayLabel = s => { const d=new Date(s+'T12:00'); return d.toLocaleDateString('es',{day:'numeric',month:'short'}); };
 
 let S = DB.get('sml_data', { days:{}, challengeStart:null, name:null });
-const save = () => DB.set('sml_data', S);
+const save = () => { DB.set('sml_data', S); if(typeof pushDay==='function') pushDay(today()); };
 function day(d=today()){ if(!S.days[d]) S.days[d]={sleep:null,quality:null,reaction:null,memory:null,attention:null}; return S.days[d]; }
 const dates = () => Object.keys(S.days).sort();
 const withData = () => dates().filter(d=>S.days[d].sleep!=null);
@@ -260,7 +267,7 @@ const TABS = [
 function go(v){ view=v; render(); window.scrollTo(0,0); }
 
 function render(){
-  navEl.classList.toggle('hidden', view==='welcome');
+  navEl.classList.toggle('hidden', view==='welcome'||view==='account');
   navEl.innerHTML = TABS.map(([id,label,icon])=>
     `<button class="${view===id?'on':''}" onclick="go('${id}')">
       <span class="bar"></span>
@@ -268,7 +275,7 @@ function render(){
       <span>${label}</span>
     </button>`).join('');
   app.className='fade';
-  app.innerHTML = ({welcome:vWelcome,home:vHome,sleep:vSleep,tests:vTests,data:vData,ai:vAI})[view]();
+  app.innerHTML = ({welcome:vWelcome,home:vHome,sleep:vSleep,tests:vTests,data:vData,ai:vAI,account:vAccount})[view]();
   void app.offsetWidth;
 }
 window.go = go;
@@ -297,7 +304,7 @@ function vWelcome(){
       <div style="flex:1;border-top:1px solid var(--line-2);padding-top:10px"><div class="data" style="font-size:20px">21</div><div class="tiny" style="margin-top:2px">mediciones</div></div>
     </div>
     <button class="btn" style="margin-top:26px" onclick="DB.set('sml_seen',true);go('sleep')">Comenzar análisis</button>
-    <p class="tiny" style="text-align:center;margin:14px 0 0">Datos guardados solo en tu dispositivo. Nadie más los ve.</p>
+    <p class="tiny" style="text-align:center;margin:14px 0 0">Guardado en tu dispositivo. Si querés verlo desde otro, podés crear una cuenta — nadie más ve tus datos.</p>
   </div>`;
 }
 
@@ -313,6 +320,11 @@ function vHome(){
       <div class="eyebrow">${new Date().toLocaleDateString('es',{weekday:'long',day:'numeric',month:'long'}).toUpperCase()}</div>
       <h1>Resumen de hoy</h1>
     </div>
+    <button onclick="go('account')" style="width:36px;height:36px;border-radius:11px;border:1px solid var(--line-2);background:var(--surface);display:flex;align-items:center;justify-content:center;flex-shrink:0" title="${session?session.user.email:'Cuenta'}">
+      ${session
+        ? `<span style="width:14px;height:14px;border-radius:50%;background:var(--good)"></span>`
+        : `<span style="width:14px;height:14px;border-radius:50%;border:1.5px solid var(--muted)"></span>`}
+    </button>
   </div>
   <p class="muted" style="margin:-6px 0 0">${d.sleep==null?'Todavía no registraste tu sueño de anoche.':`Dormiste ${d.sleep} h · calidad ${d.quality??'—'}/5`}</p>
 
@@ -771,8 +783,140 @@ function toast(msg){
   window._toastTimer = setTimeout(()=>{ t.style.transition='opacity .3s'; t.style.opacity='0'; }, 2200);
 }
 
+/* ============ cuenta / sincronización (opcional) ============
+   Si esta cuenta no está configurada (o si supabase-js no llegó a
+   cargar, por ejemplo por estar offline la primera vez), `sb` queda
+   en null y toda la app sigue funcionando 100% local como siempre —
+   ver los `if(!sb)` de acá abajo. Nada de esto es obligatorio. */
+const SUPABASE_URL = 'https://jukistinzrszdzyosqyk.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp1a2lzdGluenJzemR6eW9zcXlrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY2NjI3NjgsImV4cCI6MjEwMjIzODc2OH0.5HJrymSFe2YJ-nvxm3kcO_YGcpjySpUxiRk97sqnRzI';
+let sb = null;
+let session = null;
+let syncing = false;
+let authMsgText = null;
+
+function initSupabase(){
+  if(typeof window.supabase==='undefined') return;
+  if(!SUPABASE_URL.startsWith('https://') || SUPABASE_URL.includes('TU-PROYECTO')) return;
+  sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  sb.auth.getSession().then(({data})=>{
+    session = data.session;
+    if(session) syncFromCloud();
+    else render();
+  });
+  sb.auth.onAuthStateChange((_event, s)=>{ session = s; render(); });
+}
+
+async function syncFromCloud(){
+  if(!sb || !session) return;
+  syncing = true; render();
+  try{
+    const localDays = Object.entries(S.days).filter(([,d])=>d.sleep!=null);
+    if(localDays.length){
+      const rows = localDays.map(([date,d])=>({
+        user_id: session.user.id, date,
+        sleep:d.sleep, quality:d.quality, reaction:d.reaction, memory:d.memory, attention:d.attention
+      }));
+      await sb.from('days').upsert(rows, {onConflict:'user_id,date'});
+    }
+    const { data, error } = await sb.from('days').select('*').eq('user_id', session.user.id);
+    if(!error && data){
+      const days = {};
+      data.forEach(r=>{ days[r.date] = {sleep:r.sleep,quality:r.quality,reaction:r.reaction,memory:r.memory,attention:r.attention}; });
+      S.days = days; DB.set('sml_data', S);
+    }
+  }catch(e){ /* sin internet o error puntual: se reintenta en el próximo save/login */ }
+  syncing = false; render();
+}
+
+function pushDay(dateKey){
+  if(!sb || !session) return;
+  const d = S.days[dateKey];
+  if(!d || d.sleep==null) return;
+  sb.from('days').upsert({
+    user_id: session.user.id, date:dateKey,
+    sleep:d.sleep, quality:d.quality, reaction:d.reaction, memory:d.memory, attention:d.attention
+  }, {onConflict:'user_id,date'}).then(()=>{}, ()=>{});
+}
+
+function traducirErrorAuth(msg){
+  if(!msg) return 'Ocurrió un error. Probá de nuevo.';
+  if(msg.includes('Invalid login credentials')) return 'Email o contraseña incorrectos.';
+  if(msg.includes('User already registered')) return 'Ya existe una cuenta con ese email — probá ingresar.';
+  if(msg.toLowerCase().includes('password') && msg.toLowerCase().includes('character')) return 'La contraseña tiene que tener al menos 6 caracteres.';
+  if(msg.toLowerCase().includes('email not confirmed')) return 'Todavía no confirmaste tu email — revisá tu casilla (y spam) y tocá el link antes de ingresar.';
+  if(msg.toLowerCase().includes('email')) return 'Revisá el email ingresado.';
+  return msg;
+}
+
+window.authSignUp = async () => {
+  if(!sb) return;
+  const email = document.getElementById('acc-email').value.trim();
+  const password = document.getElementById('acc-pass').value;
+  if(!email || password.length<6){ authMsgText='Completá el email y una contraseña de al menos 6 caracteres.'; render(); return; }
+  authMsgText='Creando cuenta…'; render();
+  const { data, error } = await sb.auth.signUp({ email, password });
+  if(error){ authMsgText = traducirErrorAuth(error.message); render(); return; }
+  authMsgText = data.session ? null : 'Cuenta creada. Si te pide confirmar el email, revisá tu casilla y después volvé a ingresar.';
+  render();
+};
+window.authSignIn = async () => {
+  if(!sb) return;
+  const email = document.getElementById('acc-email').value.trim();
+  const password = document.getElementById('acc-pass').value;
+  if(!email || !password){ authMsgText='Completá email y contraseña.'; render(); return; }
+  authMsgText='Ingresando…'; render();
+  const { error } = await sb.auth.signInWithPassword({ email, password });
+  if(error){ authMsgText = traducirErrorAuth(error.message); render(); return; }
+  authMsgText = null;
+};
+window.authSignOut = async () => {
+  if(!sb) return;
+  await sb.auth.signOut();
+  session = null; authMsgText = null;
+  go('home');
+};
+
+function vAccount(){
+  if(!sb){
+    return `
+    <button class="pill" style="align-self:flex-start;text-transform:none;letter-spacing:0" onclick="go('home')">‹ Volver</button>
+    <div class="eyebrow" style="margin-top:6px">Cuenta</div>
+    <h1>Sincronización</h1>
+    <div class="card"><p class="muted" style="margin:0;font-size:13px;line-height:19px">La sincronización todavía no está configurada en esta versión. Tus datos siguen guardándose en este dispositivo mientras tanto.</p></div>`;
+  }
+  if(session){
+    return `
+    <button class="pill" style="align-self:flex-start;text-transform:none;letter-spacing:0" onclick="go('home')">‹ Volver</button>
+    <div class="eyebrow" style="margin-top:6px">Cuenta</div>
+    <h1>Tu cuenta</h1>
+    <div class="card">
+      <div class="row"><span style="font-size:13px">${session.user.email}</span><span class="pill good">Sincronizado</span></div>
+    </div>
+    <p class="tiny">Tus registros se guardan también en la nube — entrá con esta cuenta desde cualquier dispositivo y los vas a ver.</p>
+    ${syncing?`<p class="tiny" style="color:var(--accent-2)">Sincronizando…</p>`:''}
+    <button class="btn ghost" onclick="syncFromCloud()">Sincronizar ahora</button>
+    <button class="btn ghost" onclick="authSignOut()">Cerrar sesión</button>`;
+  }
+  return `
+  <button class="pill" style="align-self:flex-start;text-transform:none;letter-spacing:0" onclick="go('home')">‹ Volver</button>
+  <div class="eyebrow" style="margin-top:6px">Cuenta</div>
+  <h1>Guardá tus datos</h1>
+  <p class="muted" style="margin:0;font-size:13px;line-height:19px">Creá una cuenta para ver tus registros desde cualquier dispositivo. Es opcional — sin cuenta, todo sigue guardándose solo en este teléfono.</p>
+  <div class="card">
+    <label class="tiny" style="display:block;margin-bottom:6px">EMAIL</label>
+    <input id="acc-email" type="email" style="width:100%;background:var(--surface-2);border:1px solid var(--line-2);border-radius:10px;padding:12px;color:var(--ink);font-size:15px" placeholder="tu@email.com">
+    <label class="tiny" style="display:block;margin:12px 0 6px">CONTRASEÑA</label>
+    <input id="acc-pass" type="password" style="width:100%;background:var(--surface-2);border:1px solid var(--line-2);border-radius:10px;padding:12px;color:var(--ink);font-size:15px" placeholder="Mínimo 6 caracteres">
+  </div>
+  ${authMsgText?`<p class="tiny" style="color:${authMsgText.startsWith('Cuenta creada')?'var(--good)':'var(--warn)'}">${authMsgText}</p>`:''}
+  <button class="btn" onclick="authSignIn()">Ingresar</button>
+  <button class="btn ghost" onclick="authSignUp()">Crear cuenta nueva</button>`;
+}
+
 /* arranque */
 render();
+initSupabase();
 if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
 </script>
 </body>
