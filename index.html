@@ -123,7 +123,7 @@ h3{font-size:14px;margin:0 0 8px;font-weight:600}
   font-size:11px;color:var(--muted);padding:6px 10px;border-radius:8px;border:1px solid var(--line-2);
 }
 .tapzone{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px}
-.tapzone .big{font-family:var(--font-display);font-size:64px;font-weight:700;letter-spacing:-.05em;line-height:.95}
+.tapzone .big{font-family:var(--font-display);font-size:64px;font-weight:700;letter-spacing:-.05em;line-height:.95;animation:popIn .4s cubic-bezier(.2,.8,.2,1) both}
 .tapzone .label{font-size:14px;font-weight:500;color:var(--muted);margin-top:12px;max-width:280px}
 .seq{display:grid;grid-template-columns:repeat(3,1fr);gap:11px;width:min(280px,78vw);margin-top:26px}
 .key{aspect-ratio:1;border-radius:14px;background:var(--surface-2);border:1px solid var(--line-2);font-family:var(--font-display);font-size:20px;font-weight:700;display:flex;align-items:center;justify-content:center;color:var(--muted)}
@@ -187,11 +187,35 @@ ul.list{list-style:none;padding:0;margin:0}
 ul.list li{padding:13px 2px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;font-size:14px;gap:10px}
 ul.list li:last-child{border-bottom:0}
 ul.list li span:last-child{font-size:11px;color:var(--muted);text-align:right}
-.fade{animation:fade .28s ease both}
-@keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.fade{animation:fade .32s cubic-bezier(.2,.8,.2,1) both}
+.fade>*{animation:fadeUp .38s cubic-bezier(.2,.8,.2,1) both}
+.fade>*:nth-child(1){animation-delay:0ms}
+.fade>*:nth-child(2){animation-delay:30ms}
+.fade>*:nth-child(3){animation-delay:60ms}
+.fade>*:nth-child(4){animation-delay:90ms}
+.fade>*:nth-child(5){animation-delay:120ms}
+.fade>*:nth-child(6){animation-delay:150ms}
+.fade>*:nth-child(n+7){animation-delay:170ms}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
 @keyframes flashfeedback{0%{opacity:1}100%{opacity:0}}
 .feedback{animation:flashfeedback .5s ease forwards}
-@media (prefers-reduced-motion:reduce){.fade,.feedback{animation:none}}
+@keyframes popIn{from{opacity:0;transform:scale(.85)}to{opacity:1;transform:none}}
+@keyframes countRing{from{stroke-dashoffset:var(--circ)}to{stroke-dashoffset:var(--offset)}}
+.btn{transition:transform .12s ease, background-color .15s ease}
+.btn:active{transform:scale(.965)}
+.step{transition:transform .1s ease, border-color .15s ease}
+.step:active{transform:scale(.9)}
+.q{transition:transform .12s ease, background-color .18s ease, border-color .18s ease}
+.q:active{transform:scale(.94)}
+.card{transition:border-color .2s ease}
+.bar-track i{transition:width .7s cubic-bezier(.2,.8,.2,1)}
+.key{transition:background-color .12s ease, transform .1s ease}
+.key:active{transform:scale(.93)}
+nav button .bar{transition:background-color .25s ease, width .25s ease}
+.data.pop,.pop{animation:popIn .35s cubic-bezier(.2,.8,.2,1) both}
+#arena .tapzone{transition:background-color .12s ease}
+@media (prefers-reduced-motion:reduce){.fade,.fade>*,.feedback,.data.pop,.pop{animation:none}.btn,.step,.q,.card,.bar-track i,.key{transition:none}}
 .mark{width:52px;height:52px;border-radius:14px;background:var(--surface);border:1px solid var(--line-2);display:flex;align-items:center;justify-content:center}
 .divider{height:1px;background:var(--line-2);margin:0 -18px}
 </style>
@@ -303,8 +327,9 @@ function vWelcome(){
       <div style="flex:1;border-top:1px solid var(--line-2);padding-top:10px"><div class="data" style="font-size:20px">3</div><div class="tiny" style="margin-top:2px">tests diarios</div></div>
       <div style="flex:1;border-top:1px solid var(--line-2);padding-top:10px"><div class="data" style="font-size:20px">21</div><div class="tiny" style="margin-top:2px">mediciones</div></div>
     </div>
-    <button class="btn" style="margin-top:26px" onclick="DB.set('sml_seen',true);go('sleep')">Comenzar análisis</button>
-    <p class="tiny" style="text-align:center;margin:14px 0 0">Guardado en tu dispositivo. Si querés verlo desde otro, podés crear una cuenta — nadie más ve tus datos.</p>
+    <button class="btn" style="margin-top:26px" onclick="onboardingAccount=true;go('account')">Crear cuenta y empezar</button>
+    <button class="btn ghost" style="margin-top:10px" onclick="DB.set('sml_seen',true);go('sleep')">Continuar sin cuenta</button>
+    <p class="tiny" style="text-align:center;margin:14px 0 0">Con cuenta, tus datos se sincronizan entre dispositivos. Sin cuenta, quedan solo en este teléfono. Nadie más los ve de ninguna forma.</p>
   </div>`;
 }
 
@@ -329,11 +354,11 @@ function vHome(){
   <p class="muted" style="margin:-6px 0 0">${d.sleep==null?'Todavía no registraste tu sueño de anoche.':`Dormiste ${d.sleep} h · calidad ${d.quality??'—'}/5`}</p>
 
   <div class="statrow">
-    <div class="stat"><b>${d.sleep??'—'}<small>${d.sleep!=null?'h':''}</small></b><span>SUEÑO</span></div>
+    <div class="stat"><b class="pop">${d.sleep??'—'}<small>${d.sleep!=null?'h':''}</small></b><span>SUEÑO</span></div>
     <div class="statdiv"></div>
-    <div class="stat"><b style="color:var(--accent-2)">${cs??'—'}</b><span>Í. COGNITIVO</span></div>
+    <div class="stat"><b class="pop" style="color:var(--accent-2);animation-delay:.06s">${cs??'—'}</b><span>Í. COGNITIVO</span></div>
     <div class="statdiv"></div>
-    <div class="stat"><b style="color:var(--warn)">${done}<small>/3</small></b><span>TESTS</span></div>
+    <div class="stat"><b class="pop" style="color:var(--warn);animation-delay:.12s">${done}<small>/3</small></b><span>TESTS</span></div>
   </div>
 
   ${d.sleep==null?`<button class="btn" onclick="go('sleep')">Registrar sueño</button>`
@@ -395,7 +420,7 @@ function vSleep(){
     <div class="tiny" style="text-align:center;letter-spacing:.1em">HORAS DORMIDAS</div>
     <div class="hours">
       <button class="step" onclick="setH(-0.5)">–</button>
-      <div class="val"><b>${draftH.toFixed(1)}</b><span>h</span></div>
+      <div class="val"><b class="pop">${draftH.toFixed(1)}</b><span>h</span></div>
       <button class="step" onclick="setH(0.5)">+</button>
     </div>
     <p class="tiny" style="text-align:center;margin:14px 0 0">${sleepNote(draftH)}</p>
@@ -429,24 +454,29 @@ function vTests(){
   const d = day();
   const done = ['reaction','memory','attention'].filter(k=>d[k]!=null).length;
   const t = [
-    ['reaction','Tiempo de reacción','Tocá apenas la pantalla cambie de color. 5 intentos.', d.reaction, v=>v+' ms', 'currentColor'],
-    ['memory','Memoria a corto plazo','Repetí la secuencia. Se alarga hasta que fallás.', d.memory, v=>'nivel '+v, 'currentColor'],
-    ['attention','Atención sostenida','Tocá solo las letras, ignorá los números. 45 s.', d.attention, v=>v+'%', 'currentColor'],
+    ['reaction','Tiempo de reacción','Tocá apenas la pantalla cambie de color. 5 intentos.', d.reaction, 'var(--accent-2)', `<circle cx="9" cy="9" r="4" fill="currentColor"/>`],
+    ['memory','Memoria a corto plazo','Repetí la secuencia. Se alarga hasta que fallás.', d.memory, 'var(--accent)', `<rect x="5" y="5" width="8" height="8" fill="currentColor"/>`],
+    ['attention','Atención sostenida','Tocá solo las letras, ignorá los números. 45 s.', d.attention, 'var(--warn)', `<rect x="5" y="5" width="8" height="8" transform="rotate(45 9 9)" stroke="currentColor" stroke-width="1.6" fill="none"/>`],
   ];
   return `
   <div class="eyebrow">Batería diaria</div>
   <h1>Tests cognitivos</h1>
   <div class="card" style="flex-direction:row;align-items:center;gap:10px">
     <div style="flex:1"><div style="font-size:13px;font-weight:600">Progreso de hoy</div><div class="tiny" style="margin-top:3px">Hacelos siempre a una hora parecida.</div></div>
-    <div class="data" style="font-size:22px">${done}<span style="font-size:14px;color:var(--muted)">/3</span></div>
+    <div class="data pop" style="font-size:22px">${done}<span style="font-size:14px;color:var(--muted)">/3</span></div>
   </div>
-  ${t.map(([id,name,desc,val])=>`
+  ${t.map(([id,name,desc,val,color,glyph])=>`
     <div class="card tap ${val==null?'active':''}" onclick="start('${id}')">
       <div class="row" style="align-items:flex-start">
-        <div><h2>${name}</h2><p class="muted" style="margin:5px 0 0;font-size:12.5px;line-height:18px;max-width:220px">${desc}</p></div>
+        <div style="display:flex;gap:12px">
+          <span style="width:38px;height:38px;border-radius:12px;background:var(--surface-2);border:1px solid var(--line-2);display:flex;align-items:center;justify-content:center;color:${color};flex-shrink:0">
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">${glyph}</svg>
+          </span>
+          <div><h2>${name}</h2><p class="muted" style="margin:5px 0 0;font-size:12.5px;line-height:18px;max-width:200px">${desc}</p></div>
+        </div>
         <span class="pill ${val?'good':'warn'}">${val?'Resultado':'Pendiente'}</span>
       </div>
-      ${val!=null?`<div class="divider" style="margin-top:14px"></div><div style="margin-top:14px"><span class="data" style="font-size:22px">${id==='reaction'?val+' ms':id==='memory'?'nivel '+val:val+'%'}</span></div>`
+      ${val!=null?`<div class="divider" style="margin-top:14px"></div><div style="margin-top:14px"><span class="data pop" style="font-size:22px">${id==='reaction'?val+' ms':id==='memory'?'nivel '+val:val+'%'}</span></div>`
         :`<button class="btn compact" style="margin-top:14px">Empezar test</button>`}
     </div>`).join('')}
   ${d.reaction!=null&&d.memory!=null&&d.attention!=null?`<button class="btn" onclick="go('ai')">Ver análisis</button>`:''}`;
@@ -679,7 +709,7 @@ function vAI(){
   ${cs!=null?`<div class="card">
     <div class="row" style="align-items:flex-end">
       <div><div class="tiny" style="letter-spacing:.1em">ÍNDICE COGNITIVO DE HOY</div>
-        <div style="display:flex;align-items:baseline;gap:6px;margin-top:5px"><span class="data" style="font-size:40px;color:var(--accent-2)">${cs}</span><span class="tiny">/ 100</span></div>
+        <div style="display:flex;align-items:baseline;gap:6px;margin-top:5px"><span class="data pop" style="font-size:40px;color:var(--accent-2)">${cs}</span><span class="tiny">/ 100</span></div>
       </div>
       ${bestVal!=null?`<div style="text-align:right"><div class="tiny">TU MEJOR DÍA</div><div class="data" style="font-size:18px;margin-top:2px">${bestVal}</div></div>`:''}
     </div>
@@ -793,6 +823,7 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 let sb = null;
 let session = null;
 let syncing = false;
+let onboardingAccount = false;
 let authMsgText = null;
 
 function initSupabase(){
@@ -804,7 +835,16 @@ function initSupabase(){
     if(session) syncFromCloud();
     else render();
   });
-  sb.auth.onAuthStateChange((_event, s)=>{ session = s; render(); });
+  sb.auth.onAuthStateChange((_event, s)=>{
+    session = s;
+    if(session && onboardingAccount){
+      onboardingAccount = false;
+      DB.set('sml_seen', true);
+      syncFromCloud().then(()=>go('sleep'));
+      return;
+    }
+    render();
+  });
 }
 
 async function syncFromCloud(){
@@ -877,10 +917,14 @@ window.authSignOut = async () => {
   go('home');
 };
 
+window.skipAccount = () => { onboardingAccount=false; DB.set('sml_seen',true); go('sleep'); };
 function vAccount(){
+  const backBtn = onboardingAccount
+    ? `<button class="pill" style="align-self:flex-start;text-transform:none;letter-spacing:0" onclick="skipAccount()">‹ Omitir por ahora</button>`
+    : `<button class="pill" style="align-self:flex-start;text-transform:none;letter-spacing:0" onclick="go('home')">‹ Volver</button>`;
   if(!sb){
     return `
-    <button class="pill" style="align-self:flex-start;text-transform:none;letter-spacing:0" onclick="go('home')">‹ Volver</button>
+    ${backBtn}
     <div class="eyebrow" style="margin-top:6px">Cuenta</div>
     <h1>Sincronización</h1>
     <div class="card"><p class="muted" style="margin:0;font-size:13px;line-height:19px">La sincronización todavía no está configurada en esta versión. Tus datos siguen guardándose en este dispositivo mientras tanto.</p></div>`;
@@ -899,7 +943,7 @@ function vAccount(){
     <button class="btn ghost" onclick="authSignOut()">Cerrar sesión</button>`;
   }
   return `
-  <button class="pill" style="align-self:flex-start;text-transform:none;letter-spacing:0" onclick="go('home')">‹ Volver</button>
+  ${backBtn}
   <div class="eyebrow" style="margin-top:6px">Cuenta</div>
   <h1>Guardá tus datos</h1>
   <p class="muted" style="margin:0;font-size:13px;line-height:19px">Creá una cuenta para ver tus registros desde cualquier dispositivo. Es opcional — sin cuenta, todo sigue guardándose solo en este teléfono.</p>
